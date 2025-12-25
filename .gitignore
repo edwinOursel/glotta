@@ -1,3 +1,46 @@
 .idea
 __pycache__
 training_checkpoints
+
+# Python
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Models and cache
+models/
+*.bin
+*.safetensors
+transformers_cache/
+huggingface_cache/
+
+# Generated vocabulary files (keep examples)
+vocabulary_*.json
+!vocabulary_example.json
+
+# Old code (TensorFlow/Keras)
+shakespeare.txt
+corpus_reader.py
+fit.py
+test.py
+preprocessor.py
+model.py
+generator.py
+main.py
+
+# IDE
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db

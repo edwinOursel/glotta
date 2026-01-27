@@ -27,29 +27,41 @@ Utilisateur → Vocabulaire connu → Modèle LLM japonais
 
 ## 🚀 Installation
 
+### Avec uv (recommandé)
+
 ```bash
-# Cloner le repo
-git clone <repo-url>
-cd glotta
+# Installer uv si nécessaire
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Installer les dépendances
-pip install -r requirements.txt
+uv pip install -e .
 
 # Note: Le premier lancement téléchargera le modèle (~500MB pour gpt2-small)
 ```
+
+### Avec pip classique
+
+```bash
+# Installer les dépendances depuis pyproject.toml
+pip install -e .
+```
+
+Voir [INSTALL.md](./INSTALL.md) pour plus de détails.
 
 ### Dépendances principales
 - `torch` : Framework de deep learning
 - `transformers` : Librairie Hugging Face pour les LLMs
 - `sentencepiece` : Tokenisation
 - `fugashi` + `ipadic` : Analyse morphologique japonaise (optionnel)
+- `fastapi` + `uvicorn` : API REST pour l'app mobile
 
 ## 📖 Utilisation rapide
 
 ### 1. Demo basique
 
 ```bash
-python demo.py 1
+uv run python demo.py 1
+# ou simplement: python demo.py 1
 ```
 
 Génère du texte avec un vocabulaire minimal (débutant).

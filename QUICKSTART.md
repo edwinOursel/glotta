@@ -4,9 +4,14 @@ Get up and running with Glotta in 5 minutes!
 
 ## Prerequisites
 
-- **Python 3.8+** with pip
+- **Python 3.8+** with uv (or pip)
 - **Flutter 3.0+** (for mobile development)
 - **Git**
+
+**Install uv (recommended):**
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
 
 ## Option 1: Backend Only (Quick Test)
 
@@ -19,13 +24,15 @@ cd glotta
 
 # 2. Install Python dependencies
 cd core
-pip install -r requirements.txt
+uv pip install -e .
+# or with classic pip: pip install -e .
 
 # 3. Run a demo
-python demo.py 1
+uv run python demo.py 1
+# or: python demo.py 1
 
 # Or try interactive mode
-python demo.py 4
+uv run python demo.py 4
 ```
 
 ## Option 2: Backend + API Server
@@ -37,10 +44,11 @@ Run the backend with API server for mobile integration:
 cd core
 
 # 2. Install dependencies (if not already done)
-pip install -r requirements.txt
+uv pip install -e .
 
 # 3. Start the API server
-python api_server.py
+uv run python api_server.py
+# or: python api_server.py
 
 # Server will run at http://localhost:8000
 # API docs available at http://localhost:8000/docs
@@ -70,7 +78,7 @@ curl -X POST http://localhost:8000/api/generate \
 ```bash
 # Terminal 1: Start API server
 cd core
-python api_server.py
+uv run python api_server.py
 ```
 
 ### Step 2: Run the Mobile App
@@ -140,7 +148,8 @@ When you run the mobile app:
 
 ### Python: `ModuleNotFoundError`
 ```bash
-pip install -r requirements.txt
+uv pip install -e .
+# or: pip install -e .
 ```
 
 ### Python: Model download fails

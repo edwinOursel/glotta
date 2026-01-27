@@ -1,0 +1,82 @@
+name: Build Flutter Web
+
+on:
+  push:
+    branches: [ main, master, claude/mobile-app-flutter-dEUYr ]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/build-web.yml'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'mobile/**'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  build:
+    name: Build and Deploy Flutter Web
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+
+      - name: Get dependencies
+        working-directory: mobile
+        run: flutter pub get
+
+      - name: Build web
+        working-directory: mobile
+        run: |
+          flutter build web \
+            --release \
+            --web-renderer canvaskit \
+            --base-href /glotta/
+
+      - name: Create artifact metadata
+        working-directory: mobile/build/web
+        run: |
+          echo "Build Date: $(date)" > build-info.txt
+          echo "Commit: ${{ github.sha }}" >> build-info.txt
+          echo "Branch: ${{ github.ref_name }}" >> build-info.txt
+          echo "Run: ${{ github.run_number }}" >> build-info.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-web-build
+          path: mobile/build/web/
+          retention-days: 90
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/claude/mobile-app-flutter-dEUYr'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: mobile/build/web
+          publish_branch: gh-pages
+          cname: false  # Set to your custom domain if you have one
+
+  build-info:
+    name: Build Info Comment
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Comment PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `✅ Flutter web build completed!\n\n📦 Download artifact from the [Actions tab](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})\n\n🌐 Or test live once merged to main.`
+            })

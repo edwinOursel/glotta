@@ -27,33 +27,50 @@ The core logic for constraining LLM generation based on user vocabulary.
 
 ### Mobile (Flutter App)
 
-Cross-platform mobile application for learning Japanese.
+Cross-platform application for learning Japanese - runs on Android, iOS, and **web browsers**.
 
 **Key features:**
 - Vocabulary management (add/remove words)
 - Interactive text generation
 - Progress tracking
 - JLPT level support
-- Offline mode (with downloaded models)
+- **Web version** (no Flutter SDK needed!)
+- **CI/CD** with GitHub Actions (auto-build & deploy)
+- **Termux-friendly** (develop on Android)
 
 [📱 See mobile/README.md for details](./mobile/README.md)
+[🤖 Termux Guide](./mobile/TERMUX_GUIDE.md) - Develop on Android!
 
 ## 🚀 Quick Start
 
-### Backend (Core)
+### Option 1: Termux / Android (No Flutter SDK needed!)
 
 ```bash
+# Backend
 cd core
-pip install -r requirements.txt
-python demo.py
+uv pip install -e .
+uv run python api_server.py
+
+# Frontend (auto-built by GitHub Actions)
+cd mobile
+python download_build.py  # Downloads latest build
+python serve_web.py       # Serves on http://localhost:8080
 ```
 
-### Mobile App
+📖 Full guide: [mobile/TERMUX_GUIDE.md](./mobile/TERMUX_GUIDE.md)
+
+### Option 2: With Flutter SDK
 
 ```bash
+# Backend
+cd core
+uv pip install -e .
+python demo.py
+
+# Mobile app
 cd mobile
 flutter pub get
-flutter run
+flutter run  # or: flutter run -d chrome
 ```
 
 ## 💡 How It Works
@@ -102,21 +119,37 @@ Japanese LLM Model → Constrained Generation
 
 ## 🗺️ Roadmap
 
-- [x] Core: Logits manipulation for vocabulary constraints
-- [x] Core: Three constraint modes (hard/soft/adaptive)
-- [x] Core: User vocabulary management
-- [ ] Core: FastAPI backend with REST endpoints
-- [ ] Mobile: Basic Flutter app scaffold
-- [ ] Mobile: Vocabulary management UI
-- [ ] Mobile: Text generation UI
-- [ ] Mobile: User authentication
-- [ ] Mobile: Progress tracking
-- [ ] Integration: Backend ↔ Mobile API
-- [ ] Features: JLPT level integration
-- [ ] Features: Grammar-guided generation
-- [ ] Features: Conversation mode
-- [ ] Deploy: Backend to cloud
-- [ ] Deploy: Mobile apps to stores
+**Core (Backend):**
+- [x] Logits manipulation for vocabulary constraints
+- [x] Three constraint modes (hard/soft/adaptive)
+- [x] User vocabulary management
+- [x] FastAPI backend with REST endpoints
+- [x] uv-based dependency management
+- [ ] JLPT vocabulary database integration
+- [ ] Grammar-guided generation
+- [ ] Conversation mode
+
+**Mobile (Frontend):**
+- [x] Basic Flutter app scaffold
+- [x] Flutter web support
+- [x] PWA (Progressive Web App) capabilities
+- [x] CI/CD with GitHub Actions
+- [x] Termux compatibility (develop on Android!)
+- [ ] Vocabulary management UI
+- [ ] Text generation UI
+- [ ] User authentication
+- [ ] Progress tracking
+- [ ] Offline mode with local models
+
+**Integration:**
+- [ ] Backend ↔ Mobile API integration
+- [ ] Real-time text generation
+- [ ] User profiles with cloud sync
+
+**Deployment:**
+- [x] GitHub Pages (web app)
+- [ ] Backend to cloud (Railway/Fly.io)
+- [ ] Mobile apps to stores (Play Store/App Store)
 
 ## 🤝 Contributing
 

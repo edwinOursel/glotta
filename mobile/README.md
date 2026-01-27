@@ -1,14 +1,20 @@
 # 📱 Glotta Mobile - Flutter App
 
-Cross-platform mobile application for learning Japanese with constrained LLM generation.
+Cross-platform application for learning Japanese with constrained LLM generation.
+
+**Runs on:**
+- 📱 Android & iOS (native apps)
+- 🌐 Web browsers (desktop & mobile)
+- 💻 Desktop (Windows, macOS, Linux)
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- Flutter SDK 3.0.0 or higher
+- Flutter SDK 3.0.0 or higher (for native/web builds)
 - Dart 3.0.0 or higher
 - Android Studio / Xcode (for mobile development)
+- **Or just Python** for serving pre-built web version
 
 ### Installation
 
@@ -36,6 +42,23 @@ flutter test
 flutter build apk        # Android
 flutter build ipa        # iOS
 flutter build web        # Web
+
+# Serve web build locally (no Flutter needed!)
+python serve_web.py      # After building web
+```
+
+### Web Deployment (Termux-friendly!)
+
+Can't run Flutter on Termux? No problem! See [WEB_DEPLOYMENT.md](./WEB_DEPLOYMENT.md) for:
+- Building on PC and serving on Termux
+- Deploying to free hosting (GitHub Pages, Netlify, Vercel)
+- Running as PWA (installable web app)
+
+**Quick start:**
+```bash
+# After building on PC, just serve it:
+python serve_web.py
+# Open http://localhost:8080 in browser
 ```
 
 ## 🏗️ Architecture
@@ -285,8 +308,11 @@ Text(AppLocalizations.of(context).learnTab)
 
 - ✅ Android 5.0+ (API 21+)
 - ✅ iOS 12.0+
-- ⚠️ Web (limited functionality, no offline mode)
-- ⚠️ Desktop (experimental)
+- ✅ **Web** (Chrome, Firefox, Safari, Edge - mobile & desktop)
+  - PWA installable
+  - Works offline after first load
+  - See [WEB_DEPLOYMENT.md](./WEB_DEPLOYMENT.md)
+- ✅ Desktop (Windows, macOS, Linux)
 
 ## 🤝 Contributing
 

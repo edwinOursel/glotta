@@ -27,7 +27,7 @@ huggingface_cache/
 vocabulary_*.json
 !vocabulary_example.json
 
-# Old code (TensorFlow/Keras)
+# Old code (TensorFlow/Keras) - kept at root for reference
 shakespeare.txt
 corpus_reader.py
 fit.py
@@ -44,3 +44,11 @@ main.py
 # OS
 .DS_Store
 Thumbs.db
+
+# Mobile (Flutter) - see mobile/.gitignore for details
+mobile/build/
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
+mobile/pubspec.lock

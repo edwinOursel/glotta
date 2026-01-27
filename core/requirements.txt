@@ -5,3 +5,8 @@ fugashi>=1.3.0
 ipadic>=1.0.0
 unidic-lite>=1.0.8
 numpy>=1.24.0
+
+# API Server
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.4.0

@@ -1,319 +1,131 @@
-# 🗣️ Glotta - Apprentissage du japonais avec LLM contraint
+# 🗣️ Glotta - Language Learning with Constrained LLM
 
-Glotta est un système d'apprentissage de langues (focus japonais) qui utilise des modèles de langage (LLM) avec contraintes de vocabulaire. Le concept : **forcer le modèle à générer du texte uniquement avec les mots et structures grammaticales que vous connaissez déjà**.
+Glotta is a language learning system (focus: Japanese) that uses Large Language Models (LLMs) with vocabulary constraints. The concept: **force the model to generate text only using words and grammatical structures you already know**.
 
-## 💡 Concept
+## 🏗️ Monorepo Structure
 
-L'idée est simple mais puissante : au lieu de vous exposer à du contenu trop complexe, Glotta génère du texte japonais **adapté à votre niveau** en manipulant directement les probabilités de sortie du LLM (logits de la dernière couche).
-
-### Comment ça marche ?
-
-```
-Utilisateur → Vocabulaire connu → Modèle LLM japonais
-                                         ↓
-                                  Logits Processor
-                                  (contraintes de vocabulaire)
-                                         ↓
-                                  Génération contrainte
-                                  (seulement les mots connus)
-```
-
-**Mécanisme technique** :
-- Le modèle calcule normalement les probabilités pour tous les tokens
-- Avant le sampling, on applique un masque sur les logits :
-  - Mode **HARD** : `-inf` sur les tokens inconnus → probabilité = 0
-  - Mode **SOFT** : pénalité sur les tokens inconnus → moins probable
-  - Mode **ADAPTIVE** : ajuste dynamiquement selon le contexte
-
-## 🚀 Installation
-
-```bash
-# Cloner le repo
-git clone <repo-url>
-cd glotta
-
-# Installer les dépendances
-pip install -r requirements.txt
-
-# Note: Le premier lancement téléchargera le modèle (~500MB pour gpt2-small)
-```
-
-### Dépendances principales
-- `torch` : Framework de deep learning
-- `transformers` : Librairie Hugging Face pour les LLMs
-- `sentencepiece` : Tokenisation
-- `fugashi` + `ipadic` : Analyse morphologique japonaise (optionnel)
-
-## 📖 Utilisation rapide
-
-### 1. Demo basique
-
-```bash
-python demo.py 1
-```
-
-Génère du texte avec un vocabulaire minimal (débutant).
-
-### 2. Créer votre vocabulaire
-
-```python
-from japanese_generator import JapaneseGenerator
-from user_vocabulary import UserVocabulary
-
-# Initialiser
-generator = JapaneseGenerator(model_name="gpt2-small")
-vocab = generator.user_vocabulary
-
-# Ajouter vos mots
-vocab.add_words(["猫", "犬", "食べる", "好き"])
-
-# Sauvegarder
-vocab.save_to_file("my_vocabulary.json")
-```
-
-### 3. Générer du texte
-
-```python
-# Générer avec contraintes
-result = generator.generate(
-    prompt="私は猫が",
-    max_length=50,
-    use_constraints=True
-)
-print(result[0])
-```
-
-### 4. Mode interactif
-
-```bash
-python demo.py 4
-```
-
-Testez la génération en temps réel avec différentes contraintes.
-
-## 📁 Structure du projet
+This is a monorepo containing:
 
 ```
 glotta/
-├── README.md                           # Ce fichier
-├── requirements.txt                    # Dépendances
-│
-├── japanese_generator.py               # Générateur principal
-├── logits_processor.py                 # Manipulation des logits
-├── user_vocabulary.py                  # Gestion du vocabulaire utilisateur
-│
-├── demo.py                             # Scripts de démonstration
-│
-├── vocabulary_n5.json                  # Vocabulaire JLPT N5 (exemple)
-└── vocabulary_intermediate.json        # Vocabulaire intermédiaire (exemple)
+├── core/          # Python backend - LLM with vocabulary constraints
+├── mobile/        # Flutter mobile app - User interface
+└── README.md      # This file
 ```
 
-## 🎯 Fonctionnalités
+### Core (Python Backend)
 
-### ✅ Implémenté
+The core logic for constraining LLM generation based on user vocabulary.
 
-- [x] Manipulation des logits pour contraindre le vocabulaire
-- [x] Trois modes de contrainte (hard/soft/adaptive)
-- [x] Gestion du vocabulaire utilisateur (save/load JSON)
-- [x] Support des modèles japonais pré-entraînés (rinna/japanese-gpt2)
-- [x] Mode interactif pour tester
-- [x] Génération avec/sans contraintes pour comparaison
+**Key features:**
+- Manipulates logits (output probabilities) before token sampling
+- Three constraint modes: hard, soft, adaptive
+- User vocabulary management with JSON persistence
+- Support for pre-trained Japanese LLM models (rinna/japanese-gpt2)
 
-### 🚧 À venir
+[📖 See core/README.md for details](./core/README.md)
 
-- [ ] Intégration bases de données JLPT (N5-N1)
-- [ ] Support des règles grammaticales (GrammarGuidedLogitsProcessor)
-- [ ] Analyse morphologique automatique (MeCab)
-- [ ] Interface web (Gradio/Streamlit)
-- [ ] Système de progression automatique (détecter les mots maîtrisés)
-- [ ] Support multi-langues (au-delà du japonais)
-- [ ] Fine-tuning sur corpus spécifiques
-- [ ] Mode conversation (chatbot adaptatif)
+### Mobile (Flutter App)
 
-## 🔧 Configuration avancée
+Cross-platform mobile application for learning Japanese.
 
-### Modes de contrainte
+**Key features:**
+- Vocabulary management (add/remove words)
+- Interactive text generation
+- Progress tracking
+- JLPT level support
+- Offline mode (with downloaded models)
 
-```python
-# Mode HARD : bloque complètement les tokens inconnus
-generator.set_constraint_mode("hard")
+[📱 See mobile/README.md for details](./mobile/README.md)
 
-# Mode SOFT : pénalise mais n'interdit pas
-generator.set_constraint_mode("soft")
+## 🚀 Quick Start
 
-# Mode ADAPTIVE : ajuste selon le contexte
-generator.set_constraint_mode("adaptive")
+### Backend (Core)
+
+```bash
+cd core
+pip install -r requirements.txt
+python demo.py
 ```
 
-### Choix du modèle
+### Mobile App
 
-```python
-# Modèles disponibles
-models = {
-    "gpt2-small": "rinna/japanese-gpt2-small",      # ~350MB, rapide
-    "gpt2-medium": "rinna/japanese-gpt2-medium",    # ~800MB, meilleur
-    "gpt2-large": "rinna/japanese-gpt2-1b",         # ~3GB, excellent
-    "gpt-neox": "rinna/japanese-gpt-neox-small",    # ~1.4GB, moderne
-}
-
-generator = JapaneseGenerator(model_name="gpt2-medium")
+```bash
+cd mobile
+flutter pub get
+flutter run
 ```
 
-### Paramètres de génération
+## 💡 How It Works
 
-```python
-result = generator.generate(
-    prompt="今日は",
-    max_length=100,           # Longueur max
-    temperature=0.8,          # Créativité (0.7-1.0 recommandé)
-    top_p=0.9,               # Nucleus sampling
-    top_k=50,                # Top-k sampling
-    use_constraints=True,     # Activer contraintes
-    num_return_sequences=3    # Nombre de variantes
-)
+```
+User Profile           Mobile App (Flutter)
+(Known vocabulary)            ↓
+        ↓              REST API / gRPC
+        ↓                     ↓
+    Core (Python)      Logits Processor
+        ↓              (Vocabulary constraints)
+        ↓                     ↓
+Japanese LLM Model → Constrained Generation
+                            ↓
+                    Text adapted to user level
 ```
 
-## 🧪 Exemples d'utilisation
+## 🎯 Project Goals
 
-### Exemple 1 : Débutant absolu
+1. **Personalized learning**: Generate content adapted to each user's level
+2. **Active practice**: Interactive conversations in Japanese
+3. **Progressive difficulty**: Automatically increase complexity as user improves
+4. **Grammar focus**: Practice specific grammatical patterns
+5. **Mobile-first**: Learn anywhere, anytime
 
-```python
-# Vocabulaire ultra-basique
-vocab = UserVocabulary(tokenizer)
-vocab.add_words([
-    "私", "猫", "好き", "です", "食べる", "ご飯", "美味しい"
-])
+## 🛠️ Tech Stack
 
-generator = JapaneseGenerator(user_vocabulary=vocab)
-result = generator.generate("私は", max_length=30)
-# → "私は猫が好きです。" (seulement des mots connus)
-```
+**Backend:**
+- Python 3.8+
+- PyTorch
+- Transformers (Hugging Face)
+- FastAPI (for mobile API)
 
-### Exemple 2 : Niveau intermédiaire
+**Mobile:**
+- Flutter 3.x
+- Dart
+- Provider/Riverpod (state management)
+- SQLite (local vocabulary storage)
 
-```python
-# Charger vocabulaire N4-N3
-vocab = UserVocabulary(tokenizer, vocab_file="vocabulary_n4.json")
+## 📖 Documentation
 
-# Générer plusieurs variantes
-results = generator.generate(
-    "週末に友達と",
-    num_return_sequences=3,
-    temperature=0.9
-)
-# → Trois phrases différentes avec le même vocabulaire
-```
+- [Core Backend Documentation](./core/README.md)
+- [Mobile App Documentation](./mobile/README.md)
+- [API Documentation](./docs/API.md) _(coming soon)_
+- [Architecture Decisions](./docs/ARCHITECTURE.md) _(coming soon)_
 
-### Exemple 3 : Comparaison
+## 🗺️ Roadmap
 
-```python
-prompt = "今日は"
+- [x] Core: Logits manipulation for vocabulary constraints
+- [x] Core: Three constraint modes (hard/soft/adaptive)
+- [x] Core: User vocabulary management
+- [ ] Core: FastAPI backend with REST endpoints
+- [ ] Mobile: Basic Flutter app scaffold
+- [ ] Mobile: Vocabulary management UI
+- [ ] Mobile: Text generation UI
+- [ ] Mobile: User authentication
+- [ ] Mobile: Progress tracking
+- [ ] Integration: Backend ↔ Mobile API
+- [ ] Features: JLPT level integration
+- [ ] Features: Grammar-guided generation
+- [ ] Features: Conversation mode
+- [ ] Deploy: Backend to cloud
+- [ ] Deploy: Mobile apps to stores
 
-# Sans contraintes
-free = generator.generate(prompt, use_constraints=False)[0]
-# → Peut contenir des mots complexes, kanji rares, etc.
+## 🤝 Contributing
 
-# Avec contraintes
-constrained = generator.generate(prompt, use_constraints=True)[0]
-# → Uniquement votre vocabulaire connu
-```
-
-## 🎓 Cas d'usage pédagogiques
-
-### 1. Pratique de lecture graduée
-Générez des textes de complexité croissante au fur et à mesure de votre apprentissage.
-
-### 2. Exercices de compréhension
-Créez des dialogues adaptés à votre niveau pour pratiquer la lecture.
-
-### 3. Découverte de structures
-Voyez comment vos mots connus peuvent se combiner naturellement.
-
-### 4. Renforcement du vocabulaire
-Exposez-vous uniquement aux mots que vous étudiez actuellement.
-
-## 🧠 Détails techniques
-
-### Logits Processing
-
-Le cœur du système est le `VocabularyConstraintLogitsProcessor` :
-
-```python
-class VocabularyConstraintLogitsProcessor(LogitsProcessor):
-    def __call__(self, input_ids, scores):
-        # scores = logits de shape [batch_size, vocab_size]
-
-        # Créer un masque
-        mask = torch.zeros_like(scores)
-
-        # Appliquer -inf aux tokens interdits
-        for forbidden_id in forbidden_tokens:
-            mask[:, forbidden_id] = float('-inf')
-
-        # Modifier les scores
-        return scores + mask
-```
-
-Les logits modifiés sont ensuite passés à la fonction de sampling (softmax + categorical).
-
-### Tokenisation japonaise
-
-Le japonais pose des défis spécifiques :
-- Pas d'espaces entre les mots
-- Mélange de hiragana, katakana, kanji
-- Particules grammaticales collées aux mots
-
-Solution actuelle : **SentencePiece** (subword tokenization)
-- Un mot peut = plusieurs tokens
-- Les particules sont souvent des tokens séparés
-- Nécessite de mapper "mot connu" → "tous ses tokens"
-
-### Performance
-
-- **Overhead du masquage** : ~5-10ms par génération (négligeable)
-- **Chargement du modèle** : ~2-5s (une fois au démarrage)
-- **Génération** : ~0.5-2s pour 50 tokens (selon GPU/CPU)
-
-GPU recommandé pour une utilisation intensive, mais CPU tout à fait utilisable.
-
-## 🤝 Contribution
-
-Les contributions sont bienvenues ! Quelques idées :
-
-- **Bases de données JLPT** : Intégrer des listes officielles
-- **Analyse grammaticale** : Utiliser MeCab pour des contraintes plus fines
-- **Interface utilisateur** : Créer une app web
-- **Benchmarks** : Évaluer la qualité des textes générés
-- **Support multi-langues** : Adapter pour le coréen, chinois, etc.
-
-## 📚 Ressources
-
-### Modèles utilisés
-- [rinna/japanese-gpt2](https://huggingface.co/rinna/japanese-gpt2-medium)
-- [Documentation Transformers](https://huggingface.co/docs/transformers)
-
-### Vocabulaire japonais
-- [JLPT Resources](https://jlptsensei.com/)
-- [Core 10k](https://ankiweb.net/shared/info/2141233552)
-
-### Papers de référence
-- [CTRL: Conditional Transformer Language Model](https://arxiv.org/abs/1909.05858)
-- [Controlled Text Generation](https://lilianweng.github.io/posts/2021-01-02-controllable-text-generation/)
+This is an experimental project in active development. Contributions are welcome!
 
 ## 📝 License
 
-MIT License - Faites-en ce que vous voulez !
-
-## 🙏 Remerciements
-
-- **rinna Co.** pour les modèles japonais pré-entraînés
-- **Hugging Face** pour la librairie Transformers
-- Communauté d'apprentissage du japonais
+MIT License
 
 ---
 
-**Note** : Ce projet est expérimental et en développement actif. Les modèles actuels ne sont pas parfaits et peuvent générer du contenu bizarre ou grammaticalement incorrect. C'est un outil d'**assistance** à l'apprentissage, pas un remplacement d'un professeur !
-
-Pour toute question : ouvrez une issue sur GitHub.
-
-頑張ってください！(Ganbatte kudasai! - Bon courage !)
+**頑張ってください！** (Ganbatte kudasai! - Good luck!)

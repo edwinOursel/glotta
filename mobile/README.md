@@ -36,7 +36,7 @@ flutter run
 cd mobile
 
 # Install Python dependencies
-uv pip install -e .
+uv pip install requests
 # or: pip install requests
 
 # Download latest build from GitHub Actions

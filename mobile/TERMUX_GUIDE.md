@@ -58,7 +58,9 @@ uv pip install -e .
 
 # Mobile (pour les scripts Python)
 cd ../mobile
-uv pip install -e .
+uv pip install requests
+# Ou si vous voulez tout installer depuis pyproject.toml:
+# uv pip install -r pyproject.toml
 ```
 
 ## 📦 Télécharger la dernière build web
@@ -72,9 +74,9 @@ python download_build.py
 
 **Si erreur "requests module not found" :**
 ```bash
-# Installer les dépendances mobile :
-uv pip install -e .
-# ou juste requests :
+# Installer juste requests :
+uv pip install requests
+# ou avec pip classique:
 pip install requests
 ```
 

@@ -18,6 +18,7 @@ Cross-platform application for learning Japanese with constrained LLM generation
 
 ### Installation
 
+**For Flutter development:**
 ```bash
 # Navigate to mobile directory
 cd mobile
@@ -27,6 +28,22 @@ flutter pub get
 
 # Run on connected device/emulator
 flutter run
+```
+
+**For Termux/Python-only (no Flutter SDK):**
+```bash
+# Navigate to mobile directory
+cd mobile
+
+# Install Python dependencies
+uv pip install -e .
+# or: pip install requests
+
+# Download latest build from GitHub Actions
+python download_build.py
+
+# Serve locally
+python serve_web.py
 ```
 
 ### Development
@@ -46,6 +63,17 @@ flutter build web        # Web
 # Serve web build locally (no Flutter needed!)
 python serve_web.py      # After building web
 ```
+
+**Or use auto-built versions:**
+```bash
+# Download latest from GitHub Actions
+python download_build.py
+
+# Or just use GitHub Pages directly
+# https://edwinoursel.github.io/glotta/
+```
+
+📖 **Full Termux guide:** [TERMUX_GUIDE.md](./TERMUX_GUIDE.md)
 
 ### Web Deployment (Termux-friendly!)
 
@@ -198,6 +226,10 @@ CREATE TABLE learning_sessions (
 ## 🎯 Features Roadmap
 
 - [x] Basic app scaffold with navigation
+- [x] Flutter web support
+- [x] PWA capabilities
+- [x] CI/CD with GitHub Actions
+- [x] Python scripts for Termux (download_build.py, serve_web.py)
 - [ ] Vocabulary management UI
   - [ ] Add/edit/delete words
   - [ ] Search and filter
@@ -249,27 +281,15 @@ open coverage/html/index.html
 
 ## 📦 Dependencies
 
-### Core
+### Flutter (pubspec.yaml)
 - `flutter_riverpod`: State management
-- `provider`: Alternative state management
-
-### Networking
-- `http`: HTTP client
-- `dio`: Advanced HTTP client with interceptors
-
-### Storage
+- `http` / `dio`: HTTP client
 - `sqflite`: SQLite database
 - `shared_preferences`: Key-value storage
-- `path_provider`: File system paths
-
-### UI
 - `google_fonts`: Custom fonts
-- `flutter_svg`: SVG support
 
-### Utilities
-- `intl`: Internationalization
-- `logger`: Logging
-- `json_annotation` + `json_serializable`: JSON serialization
+### Python (pyproject.toml)
+- `requests`: For download_build.py script
 
 ## 🎨 Design System
 

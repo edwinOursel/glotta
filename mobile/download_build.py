@@ -5,6 +5,10 @@ Download the latest Flutter web build from GitHub Actions artifacts.
 This script allows you to easily download pre-built web app on Termux or
 any environment without Flutter SDK.
 
+Prerequisites:
+    pip install requests
+    # or with uv: uv pip install -e .
+
 Usage:
     python download_build.py [--token YOUR_GITHUB_TOKEN]
 
@@ -18,10 +22,20 @@ The script will:
 import os
 import sys
 import zipfile
-import requests
 from pathlib import Path
 import json
 import argparse
+
+try:
+    import requests
+except ImportError:
+    print("❌ Error: 'requests' module not found!")
+    print()
+    print("Please install it with:")
+    print("   uv pip install -e .     # If using uv")
+    print("   pip install requests    # Or with pip")
+    print()
+    sys.exit(1)
 
 # GitHub repository info (update with your repo)
 REPO_OWNER = "edwinOursel"

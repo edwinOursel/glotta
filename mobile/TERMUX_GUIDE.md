@@ -52,7 +52,12 @@ cd glotta
 ### 4. Installer les dépendances Python
 
 ```bash
+# Backend
 cd core
+uv pip install -e .
+
+# Mobile (pour les scripts Python)
+cd ../mobile
 uv pip install -e .
 ```
 
@@ -63,6 +68,14 @@ uv pip install -e .
 ```bash
 cd mobile
 python download_build.py
+```
+
+**Si erreur "requests module not found" :**
+```bash
+# Installer les dépendances mobile :
+uv pip install -e .
+# ou juste requests :
+pip install requests
 ```
 
 Le script va :

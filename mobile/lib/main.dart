@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'screens/learn/learn_screen.dart';
 
 void main() {
   runApp(
@@ -48,7 +49,7 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
   static const List<Widget> _pages = <Widget>[
-    LearnPage(),
+    LearnScreen(),
     VocabularyPage(),
     ProgressPage(),
     SettingsPage(),
@@ -93,74 +94,7 @@ class _HomePageState extends State<HomePage> {
 }
 
 // ============================================================================
-// LEARN PAGE - Main learning interface
-// ============================================================================
-
-class LearnPage extends StatelessWidget {
-  const LearnPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('学習 - Learn'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline),
-            onPressed: () {
-              // Show help/info
-            },
-          ),
-        ],
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.auto_stories,
-              size: 100,
-              color: Colors.indigo,
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Glotta',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Language learning with AI',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 48),
-            ElevatedButton.icon(
-              onPressed: () {
-                // Start learning session
-              },
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('Start Learning'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// VOCABULARY PAGE - Manage known words
+// VOCABULARY PAGE - Placeholder
 // ============================================================================
 
 class VocabularyPage extends StatelessWidget {
@@ -175,7 +109,7 @@ class VocabularyPage extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
-              // Add new word
+              // TODO: Add new word
             },
           ),
         ],
@@ -188,7 +122,7 @@ class VocabularyPage extends StatelessWidget {
 }
 
 // ============================================================================
-// PROGRESS PAGE - Track learning progress
+// PROGRESS PAGE - Placeholder
 // ============================================================================
 
 class ProgressPage extends StatelessWidget {
@@ -208,14 +142,14 @@ class ProgressPage extends StatelessWidget {
 }
 
 // ============================================================================
-// SETTINGS PAGE - App settings
+// SETTINGS PAGE - Placeholder
 // ============================================================================
 
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('設定 - Settings'),

@@ -46,15 +46,18 @@ Cross-platform application for learning Japanese - runs on Android, iOS, and **w
 ### Option 1: Termux / Android (No Flutter SDK needed!)
 
 ```bash
-# Backend
+# 1. Backend
 cd core
 uv pip install -e .
 uv run python api_server.py
+# API: http://localhost:8000
 
-# Frontend (auto-built by GitHub Actions)
+# 2. Frontend (dans un autre terminal)
 cd mobile
-python download_build.py  # Downloads latest build
-python serve_web.py       # Serves on http://localhost:8080
+uv pip install requests       # Installer dépendances
+python download_build.py      # Télécharger la dernière build
+python serve_web.py           # Servir l'app
+# App: http://localhost:8080
 ```
 
 📖 Full guide: [mobile/TERMUX_GUIDE.md](./mobile/TERMUX_GUIDE.md)

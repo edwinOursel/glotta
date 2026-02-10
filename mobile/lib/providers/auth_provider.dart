@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../models/user_profile.dart';
 import '../services/api_service.dart';
+import 'generation_provider.dart' show apiServiceProvider;
 
 // ── Storage keys ──────────────────────────────────────────────────────────────
 

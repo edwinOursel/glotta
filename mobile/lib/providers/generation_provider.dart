@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user_settings.dart';
 import '../models/generated_text.dart';
 import '../services/api_service.dart';
+import 'grammar_provider.dart';
 
 // Settings provider
 final settingsProvider = StateNotifierProvider<SettingsNotifier, UserSettings>((ref) {
@@ -61,16 +62,20 @@ class GenerationState {
 
 // Generation provider
 final generationProvider = StateNotifierProvider<GenerationNotifier, GenerationState>((ref) {
-  final apiService = ref.watch(apiServiceProvider);
-  final settings = ref.watch(settingsProvider);
-  return GenerationNotifier(apiService, settings);
+  final apiService   = ref.watch(apiServiceProvider);
+  final settings     = ref.watch(settingsProvider);
+  final grammarState = ref.watch(grammarProvider);
+  return GenerationNotifier(apiService, settings, ref, grammarState);
 });
 
 class GenerationNotifier extends StateNotifier<GenerationState> {
-  final ApiService apiService;
+  final ApiService   apiService;
   final UserSettings settings;
+  final Ref          _ref;
+  final GrammarState _grammarState;
 
-  GenerationNotifier(this.apiService, this.settings) : super(const GenerationState());
+  GenerationNotifier(this.apiService, this.settings, this._ref, this._grammarState)
+      : super(const GenerationState());
 
   Future<void> generateText({
     required String prompt,
@@ -82,32 +87,37 @@ class GenerationNotifier extends StateNotifier<GenerationState> {
       return;
     }
 
-    // Start loading
     state = state.copyWith(isLoading: true, error: null);
+
+    final selectedTheme = _grammarState.selected;
 
     try {
       final response = await apiService.generateText(
-        prompt: prompt,
-        maxLength: maxLength,
-        temperature: temperature,
+        prompt:         prompt,
+        maxLength:      maxLength,
+        temperature:    temperature,
         useConstraints: settings.useConstraints,
         constraintMode: settings.constraintMode,
-        numSequences: 1,
+        numSequences:   1,
+        systemPrompt:   selectedTheme?.systemPromptHint,
       );
 
-      // Create GeneratedText object
       final generated = GeneratedText(
-        text: response.texts.first,
-        prompt: prompt,
+        text:          response.texts.first,
+        prompt:        prompt,
         constraintMode: settings.useConstraints ? settings.constraintMode : null,
-        timestamp: DateTime.now(),
+        timestamp:     DateTime.now(),
       );
 
-      // Add to history
       state = state.copyWith(
-        history: [generated, ...state.history],
+        history:   [generated, ...state.history],
         isLoading: false,
       );
+
+      // Record session progress for the active grammar theme
+      if (selectedTheme != null) {
+        await _ref.read(grammarProvider.notifier).recordSession(selectedTheme.id);
+      }
     } catch (e) {
       state = state.copyWith(
         isLoading: false,

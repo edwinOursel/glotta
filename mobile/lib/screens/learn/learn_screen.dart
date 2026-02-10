@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../models/grammar_theme.dart';
 import '../../providers/generation_provider.dart';
+import '../../providers/grammar_provider.dart';
+import '../grammar/grammar_selection_screen.dart';
 
 class LearnScreen extends ConsumerStatefulWidget {
   const LearnScreen({super.key});
@@ -28,15 +31,27 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
   @override
   Widget build(BuildContext context) {
     final generationState = ref.watch(generationProvider);
-    final settings = ref.watch(settingsProvider);
+    final settings        = ref.watch(settingsProvider);
+    final grammarState    = ref.watch(grammarProvider);
+    final selectedTheme   = grammarState.selected;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('学習 - Learn'),
         actions: [
+          // Grammar theme selector chip
+          _GrammarThemeChip(
+            selectedTheme: selectedTheme,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => const GrammarSelectionScreen(),
+              ),
+            ),
+          ),
           // Constraint mode badge
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 4.0),
             child: Chip(
               avatar: Icon(
                 settings.useConstraints ? Icons.lock : Icons.lock_open,
@@ -85,6 +100,10 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
               ],
               backgroundColor: Theme.of(context).colorScheme.errorContainer,
             ),
+
+          // Active grammar theme banner
+          if (selectedTheme != null)
+            _ActiveGrammarBanner(theme: selectedTheme),
 
           // History list
           Expanded(
@@ -256,5 +275,92 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
     } else {
       return '${timestamp.day}/${timestamp.month} ${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}';
     }
+  }
+}
+
+// ── Grammar theme chip shown in the AppBar ────────────────────────────────────
+
+class _GrammarThemeChip extends StatelessWidget {
+  const _GrammarThemeChip({
+    required this.selectedTheme,
+    required this.onTap,
+  });
+
+  final GrammarTheme? selectedTheme;
+  final VoidCallback  onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final catColor = selectedTheme != null
+        ? Color(kCategories[selectedTheme!.category]?.colorValue ?? 0xFF9E9E9E)
+        : null;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      child: ActionChip(
+        avatar: Icon(
+          Icons.menu_book_outlined,
+          size: 16,
+          color: catColor ?? Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        label: Text(
+          selectedTheme != null ? selectedTheme!.nameJp : '文法',
+          style: TextStyle(
+            fontSize:   12,
+            color:      catColor,
+            fontWeight: selectedTheme != null ? FontWeight.bold : null,
+          ),
+        ),
+        side: catColor != null
+            ? BorderSide(color: catColor.withOpacity(0.5))
+            : null,
+        onPressed: onTap,
+        tooltip: selectedTheme != null
+            ? '${selectedTheme!.nameEn} — tap to change'
+            : 'Select grammar theme',
+      ),
+    );
+  }
+}
+
+// ── Active grammar theme contextual banner ────────────────────────────────────
+
+class _ActiveGrammarBanner extends ConsumerWidget {
+  const _ActiveGrammarBanner({required this.theme});
+
+  final GrammarTheme theme;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final catColor = Color(kCategories[theme.category]?.colorValue ?? 0xFF9E9E9E);
+
+    return Material(
+      color: catColor.withOpacity(0.08),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Icon(Icons.menu_book_outlined, size: 16, color: catColor),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '${theme.nameJp}  ·  ${theme.nameEn}',
+                style: TextStyle(
+                  fontSize:   13,
+                  color:      catColor,
+                  fontWeight: FontWeight.w600,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            GestureDetector(
+              onTap: () =>
+                  ref.read(grammarProvider.notifier).selectTheme(null),
+              child: Icon(Icons.close, size: 16, color: catColor),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -1,14 +1,7 @@
 import 'dart:convert';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/user_profile.dart';
-
-// ── Provider ──────────────────────────────────────────────────────────────────
-
-final apiServiceProvider = Provider<ApiService>((ref) {
-  return ApiService();
-});
 
 // ── Service ───────────────────────────────────────────────────────────────────
 
@@ -144,6 +137,7 @@ class ApiService {
   Future<GenerateResponse> generateText({
     required String prompt,
     String? accessToken,
+    String? systemPrompt,
     int    maxLength       = 50,
     double temperature     = 0.8,
     bool   useConstraints  = true,
@@ -160,6 +154,7 @@ class ApiService {
         'use_constraints': useConstraints,
         'constraint_mode': constraintMode,
         'num_sequences':   numSequences,
+        if (systemPrompt != null) 'system_prompt': systemPrompt,
       }),
     );
     _checkStatus(response, 'generateText');

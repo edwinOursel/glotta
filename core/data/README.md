@@ -4,7 +4,8 @@ This directory contains JLPT vocabulary data and scripts for seeding databases.
 
 ## Files
 
-- `jlpt_vocabulary.json` - JLPT vocabulary organized by level (N5-N1)
+- `jlpt_vocabulary.json` - Comprehensive JLPT vocabulary (~7,800 words) organized by level (N5-N1)
+- `fetch_jlpt_data.py` - Script to fetch latest JLPT vocabulary from GitHub
 - `seed_vocabulary.py` - Script to create and populate SQLite database
 
 ## Usage
@@ -77,25 +78,36 @@ Example:
 
 ## JLPT Levels
 
-- **N5**: ~100 words (beginner - hiragana, katakana, basic kanji)
-- **N4**: ~300 words (elementary)
-- **N3**: ~650 words (intermediate)
-- **N2**: ~1000 words (upper-intermediate)
-- **N1**: ~2000 words (advanced)
+Current dataset contains:
+- **N5**: ~686 words (beginner - hiragana, katakana, basic kanji)
+- **N4**: ~650 words (elementary)
+- **N3**: ~2,079 words (intermediate)
+- **N2**: ~1,736 words (upper-intermediate)
+- **N1**: ~2,685 words (advanced)
 
-**Note**: This dataset contains representative samples for each level, not exhaustive word lists.
+**Total: ~7,836 unique words** across all JLPT proficiency levels.
 
-## Expanding the vocabulary
+## Updating the vocabulary
 
-To add more words, edit `jlpt_vocabulary.json` and run:
+To fetch the latest vocabulary data from online sources:
+
+```bash
+# Fetch latest JLPT vocabulary (overwrites jlpt_vocabulary.json)
+python fetch_jlpt_data.py
+
+# Then rebuild the database
+python seed_vocabulary.py --reset
+```
+
+To manually add words, edit `jlpt_vocabulary.json` and run:
 
 ```bash
 python seed_vocabulary.py --reset
 ```
 
-## Sources
+## Data Sources
 
-Vocabulary compiled from:
-- Official JLPT word lists
-- Common Japanese learning resources
-- Frequency analysis of Japanese texts
+Vocabulary data sourced from:
+- [elzup/jlpt-word-list](https://github.com/elzup/jlpt-word-list) - Comprehensive JLPT N1-N5 vocabulary lists
+- CSV format with expression, reading, meaning, and JLPT level tags
+- Automatically categorized by part of speech (verb, noun, adjective, particle, etc.)

@@ -3,21 +3,36 @@
 FastAPI server for Glotta - Language Learning with Constrained LLM
 
 Provides REST API endpoints for the mobile app to:
-- Generate text with vocabulary constraints
-- Manage user vocabulary
-- Get JLPT word lists
-- Track learning progress
+- User auth (register / login / refresh)
+- User profile + settings
+- Per-user vocabulary management with SRS
+- Learning sessions + progress
+- Constrained LLM text generation (simple + agentic)
 """
 
-from fastapi import FastAPI, HTTPException
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 import uvicorn
 
+from database import init_db
 from japanese_generator import JapaneseGenerator
 from user_vocabulary import UserVocabulary
 from agentic_graph import AgenticGlotta
+from auth import get_current_user
+from models import User
+from routers import auth, users, vocabulary, sessions
+
+# ============================================================================
+# Lifespan — DB init on startup
+# ============================================================================
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_db()
+    yield
 
 # ============================================================================
 # FastAPI App Setup
@@ -26,8 +41,15 @@ from agentic_graph import AgenticGlotta
 app = FastAPI(
     title="Glotta API",
     description="Language learning with constrained LLM generation",
-    version="0.1.0"
+    version="0.2.0",
+    lifespan=lifespan,
 )
+
+# ── Routers ──────────────────────────────────────────────────────────────────
+app.include_router(auth.router)
+app.include_router(users.router)
+app.include_router(vocabulary.router)
+app.include_router(sessions.router)
 
 # CORS middleware for mobile app
 app.add_middleware(

@@ -16,8 +16,9 @@ build/
 venv/
 env/
 
-# Models and cache
+# Models and cache (ML weights — not Flutter data models)
 models/
+!mobile/lib/models/
 *.bin
 *.safetensors
 transformers_cache/

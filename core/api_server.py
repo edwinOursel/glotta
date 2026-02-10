@@ -17,6 +17,7 @@ import uvicorn
 
 from japanese_generator import JapaneseGenerator
 from user_vocabulary import UserVocabulary
+from agentic_graph import AgenticGlotta
 
 # ============================================================================
 # FastAPI App Setup
@@ -43,6 +44,7 @@ app.add_middleware(
 
 # Initialize generator (lazy loading)
 _generator: Optional[JapaneseGenerator] = None
+_agentic_glotta: Optional[AgenticGlotta] = None
 
 def get_generator() -> JapaneseGenerator:
     """Get or initialize the generator."""
@@ -52,6 +54,16 @@ def get_generator() -> JapaneseGenerator:
         _generator = JapaneseGenerator(model_name="gpt2-small")
         print("✓ Generator ready!")
     return _generator
+
+def get_agentic_glotta() -> AgenticGlotta:
+    """Get or initialize the agentic system."""
+    global _agentic_glotta
+    if _agentic_glotta is None:
+        print("🔧 Initializing Agentic Glotta system...")
+        generator = get_generator()
+        _agentic_glotta = AgenticGlotta(generator)
+        print("✓ Agentic system ready!")
+    return _agentic_glotta
 
 # ============================================================================
 # Request/Response Models
@@ -89,6 +101,20 @@ class StatsResponse(BaseModel):
     vocabulary_size: int
     constraint_mode: str
     model_name: str
+
+class AgenticGenerateRequest(BaseModel):
+    user_input: str
+    user_level: str = "N5"
+    use_constraints: bool = True
+    constraint_mode: str = "hard"
+    max_iterations: int = 3
+
+class AgenticGenerateResponse(BaseModel):
+    response: str
+    intent: Optional[str]
+    corrected_input: Optional[str]
+    validation: Optional[Dict]
+    iterations: int
 
 # ============================================================================
 # API Endpoints
@@ -276,6 +302,46 @@ async def get_stats():
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/agentic/generate", response_model=AgenticGenerateResponse)
+async def agentic_generate(request: AgenticGenerateRequest):
+    """
+    Generate Japanese text using the agentic multi-LLM system.
+
+    This endpoint uses LangGraph to orchestrate multiple LLMs:
+    - Intent detection
+    - Error correction
+    - Dynamic system prompt building
+    - Constrained generation
+    - Response validation
+
+    Args:
+        request: Agentic generation parameters
+
+    Returns:
+        Generated response with metadata
+    """
+    try:
+        agentic = get_agentic_glotta()
+
+        result = agentic.process(
+            user_input=request.user_input,
+            user_level=request.user_level,
+            use_constraints=request.use_constraints,
+            constraint_mode=request.constraint_mode,
+            max_iterations=request.max_iterations
+        )
+
+        return AgenticGenerateResponse(
+            response=result["response"],
+            intent=result.get("intent"),
+            corrected_input=result.get("corrected_input"),
+            validation=result.get("validation"),
+            iterations=result.get("iterations", 0)
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Agentic generation failed: {str(e)}")
 
 # ============================================================================
 # Run Server

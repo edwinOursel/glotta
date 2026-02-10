@@ -78,6 +78,8 @@ flutter run  # or: flutter run -d chrome
 
 ## 💡 How It Works
 
+### Simple Architecture (Basic Mode)
+
 ```
 User Profile           Mobile App (Flutter)
 (Known vocabulary)            ↓
@@ -90,6 +92,35 @@ Japanese LLM Model → Constrained Generation
                             ↓
                     Text adapted to user level
 ```
+
+### Agentic Architecture (Advanced Mode) 🆕
+
+**Multi-LLM orchestration with LangGraph** for intelligent, context-aware learning:
+
+```
+User Input
+    ↓
+Intent Detection (GPT-4 Mini)
+    ↓
+Error Correction (GPT-4 Mini)
+    ↓
+Dynamic System Prompt Builder
+    ↓
+Constrained Generation (Rinna GPT-2 + Vocabulary Constraints)
+    ↓
+Response Validation (GPT-4 Mini)
+    ↓
+Final Response with Feedback
+```
+
+**Benefits:**
+- 🎯 **Intent-aware**: Detects if user wants practice, correction, conversation, quiz, etc.
+- ✏️  **Error correction**: Automatically corrects Japanese mistakes with explanations
+- 🎨 **Dynamic prompts**: System prompt adapts to user level (N5-N1) and intent
+- ✅ **Quality validation**: Ensures responses are grammatically correct and appropriate
+- 🔄 **Auto-retry**: Regenerates if quality score too low (max 3 iterations)
+
+📖 **Full documentation**: [core/AGENTIC_ARCHITECTURE.md](./core/AGENTIC_ARCHITECTURE.md)
 
 ## 🎯 Project Goals
 
@@ -106,6 +137,8 @@ Japanese LLM Model → Constrained Generation
 - PyTorch
 - Transformers (Hugging Face)
 - FastAPI (for mobile API)
+- LangGraph + LangChain (agentic system)
+- OpenAI API (for intent detection, correction, validation)
 
 **Mobile:**
 - Flutter 3.x
@@ -116,9 +149,11 @@ Japanese LLM Model → Constrained Generation
 ## 📖 Documentation
 
 - [Core Backend Documentation](./core/README.md)
+- [Agentic Architecture (Multi-LLM System)](./core/AGENTIC_ARCHITECTURE.md) 🆕
+- [Vocabulary Data & JLPT Levels](./core/data/README.md)
 - [Mobile App Documentation](./mobile/README.md)
+- [Termux Development Guide](./mobile/TERMUX_GUIDE.md)
 - [API Documentation](./docs/API.md) _(coming soon)_
-- [Architecture Decisions](./docs/ARCHITECTURE.md) _(coming soon)_
 
 ## 🗺️ Roadmap
 
@@ -128,9 +163,14 @@ Japanese LLM Model → Constrained Generation
 - [x] User vocabulary management
 - [x] FastAPI backend with REST endpoints
 - [x] uv-based dependency management
-- [ ] JLPT vocabulary database integration
+- [x] JLPT vocabulary database (7,836 words N5-N1)
+- [x] Multi-agent agentic architecture with LangGraph
+- [x] Intent detection system
+- [x] Automatic error correction with feedback
+- [x] Dynamic system prompt generation
+- [x] Response quality validation
 - [ ] Grammar-guided generation
-- [ ] Conversation mode
+- [ ] Long-term conversation memory
 
 **Mobile (Frontend):**
 - [x] Basic Flutter app scaffold

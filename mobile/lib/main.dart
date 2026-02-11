@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'l10n/app_localizations.dart';
 import 'providers/auth_provider.dart';
-import 'providers/locale_provider.dart';
+import 'providers/locale_provider.dart'; // also exports navStyleProvider
 import 'providers/vocabulary_provider.dart' show focusWordProvider;
 import 'screens/auth/login_screen.dart';
 import 'screens/learn/learn_screen.dart';
@@ -120,7 +120,14 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
+    final l        = AppLocalizations.of(context);
+    final useKanji = ref.watch(navStyleProvider);
+
+    // Nav labels: kanji (漢字) or hiragana (ひらがな), never the UI locale
+    final navLearn    = useKanji ? l.navLearn      : 'がくしゅう';
+    final navVocab    = useKanji ? l.navVocabulary  : 'たんご';
+    final navProgress = useKanji ? l.navProgress    : 'しんちょく';
+    final navSettings = useKanji ? l.navSettings    : 'せってい';
 
     final pages = <Widget>[
       const LearnScreen(),
@@ -139,22 +146,22 @@ class _HomePageState extends ConsumerState<HomePage> {
           NavigationDestination(
             icon:         const Icon(Icons.auto_stories_outlined),
             selectedIcon: const Icon(Icons.auto_stories),
-            label:        l.navLearn,
+            label:        navLearn,
           ),
           NavigationDestination(
             icon:         const Icon(Icons.book_outlined),
             selectedIcon: const Icon(Icons.book),
-            label:        l.navVocabulary,
+            label:        navVocab,
           ),
           NavigationDestination(
             icon:         const Icon(Icons.insights_outlined),
             selectedIcon: const Icon(Icons.insights),
-            label:        l.navProgress,
+            label:        navProgress,
           ),
           NavigationDestination(
             icon:         const Icon(Icons.settings_outlined),
             selectedIcon: const Icon(Icons.settings),
-            label:        l.navSettings,
+            label:        navSettings,
           ),
         ],
       ),
@@ -191,11 +198,12 @@ class SettingsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l      = AppLocalizations.of(context);
-    final auth   = ref.watch(authProvider);
-    final user   = auth.user;
-    final locale = ref.watch(localeProvider);
-    final colors = Theme.of(context).colorScheme;
+    final l         = AppLocalizations.of(context);
+    final auth      = ref.watch(authProvider);
+    final user      = auth.user;
+    final locale    = ref.watch(localeProvider);
+    final useKanji  = ref.watch(navStyleProvider);
+    final colors    = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: Text(l.settingsTitle)),
@@ -224,6 +232,15 @@ class SettingsPage extends ConsumerWidget {
             subtitle: Text(locale.languageCode == 'fr' ? 'Français' : 'English'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _pickLocale(context, ref, locale),
+          ),
+
+          // ── Nav label style ───────────────────────────────────────────
+          ListTile(
+            leading:  const Icon(Icons.text_fields_outlined),
+            title:    Text(l.settingsNavStyle),
+            subtitle: Text(useKanji ? l.settingsNavKanji : l.settingsNavHiragana),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _pickNavStyle(context, ref, useKanji),
           ),
 
           // ── JLPT Level ────────────────────────────────────────────────
@@ -282,6 +299,48 @@ class SettingsPage extends ConsumerWidget {
               await ref.read(authProvider.notifier).logout();
             },
           ),
+        ],
+      ),
+    );
+  }
+
+  void _pickNavStyle(BuildContext context, WidgetRef ref, bool useKanji) {
+    final l = AppLocalizations.of(context);
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (_) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(l.settingsNavStyle,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ),
+          ListTile(
+            leading:  const Text('漢', style: TextStyle(fontSize: 20)),
+            title:    Text(l.settingsNavKanji),
+            subtitle: const Text('学習  単語  進捗  設定'),
+            trailing: useKanji
+                ? const Icon(Icons.check, color: Colors.indigo)
+                : null,
+            onTap: () {
+              Navigator.pop(context);
+              ref.read(navStyleProvider.notifier).setKanji(true);
+            },
+          ),
+          ListTile(
+            leading:  const Text('あ', style: TextStyle(fontSize: 20)),
+            title:    Text(l.settingsNavHiragana),
+            subtitle: const Text('がくしゅう  たんご  しんちょく  せってい'),
+            trailing: !useKanji
+                ? const Icon(Icons.check, color: Colors.indigo)
+                : null,
+            onTap: () {
+              Navigator.pop(context);
+              ref.read(navStyleProvider.notifier).setKanji(false);
+            },
+          ),
+          const SizedBox(height: 8),
         ],
       ),
     );

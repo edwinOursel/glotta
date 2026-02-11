@@ -27,3 +27,30 @@ class LocaleNotifier extends StateNotifier<Locale> {
 final localeProvider = StateNotifierProvider<LocaleNotifier, Locale>(
   (_) => LocaleNotifier(),
 );
+
+// ── Nav label style ───────────────────────────────────────────────────────────
+// true  = kanji  (学習 / 単語 / 進捗 / 設定)
+// false = hiragana (がくしゅう / たんご / しんちょく / せってい)
+
+const _kNavKanjiKey = 'nav_kanji';
+
+class NavStyleNotifier extends StateNotifier<bool> {
+  NavStyleNotifier() : super(true) {
+    _load();
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    state = prefs.getBool(_kNavKanjiKey) ?? true;
+  }
+
+  Future<void> setKanji(bool value) async {
+    state = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kNavKanjiKey, value);
+  }
+}
+
+final navStyleProvider = StateNotifierProvider<NavStyleNotifier, bool>(
+  (_) => NavStyleNotifier(),
+);

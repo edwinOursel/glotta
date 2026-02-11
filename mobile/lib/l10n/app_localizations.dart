@@ -107,6 +107,11 @@ abstract class AppLocalizations {
   String get navProgress;
   String get navSettings;
 
+  // ── Nav label style setting ───────────────────────────────────────────────
+  String get settingsNavStyle;
+  String get settingsNavKanji;
+  String get settingsNavHiragana;
+
   // ── Lookup ───────────────────────────────────────────────────────────────
 
   static AppLocalizations of(BuildContext context) =>
@@ -242,6 +247,10 @@ class _EnLocalizations extends AppLocalizations {
   @override String get navVocabulary => '単語';
   @override String get navProgress   => '進捗';
   @override String get navSettings   => '設定';
+
+  @override String get settingsNavStyle    => 'Navigation labels';
+  @override String get settingsNavKanji    => 'Kanji (漢字)';
+  @override String get settingsNavHiragana => 'Hiragana (ひらがな)';
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -347,4 +356,8 @@ class _FrLocalizations extends AppLocalizations {
   @override String get navVocabulary => '単語';
   @override String get navProgress   => '進捗';
   @override String get navSettings   => '設定';
+
+  @override String get settingsNavStyle    => 'Labels de navigation';
+  @override String get settingsNavKanji    => 'Kanji (漢字)';
+  @override String get settingsNavHiragana => 'Hiragana (ひらがな)';
 }

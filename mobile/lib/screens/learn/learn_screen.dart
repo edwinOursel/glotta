@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/grammar_theme.dart';
 import '../../providers/generation_provider.dart';
 import '../../providers/grammar_provider.dart';
@@ -50,9 +51,11 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
     final selectedTheme   = grammarState.selected;
     final focusWord       = ref.watch(focusWordProvider);
 
+    final l = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('学習 - Learn'),
+        title: Text(l.learnTitle),
         actions: [
           // Grammar theme selector chip
           _GrammarThemeChip(
@@ -86,7 +89,7 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
             onPressed: () {
               ref.read(settingsProvider.notifier).toggleConstraints();
             },
-            tooltip: 'Toggle vocabulary constraints',
+            tooltip: l.learnToggleConstraints,
           ),
           // Clear history
           if (generationState.history.isNotEmpty)
@@ -95,7 +98,7 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
               onPressed: () {
                 ref.read(generationProvider.notifier).clearHistory();
               },
-              tooltip: 'Clear history',
+              tooltip: l.learnClearHistory,
             ),
         ],
       ),
@@ -110,7 +113,7 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
                   onPressed: () {
                     ref.read(generationProvider.notifier).clearError();
                   },
-                  child: const Text('Dismiss'),
+                  child: Text(l.learnDismiss),
                 ),
               ],
               backgroundColor: Theme.of(context).colorScheme.errorContainer,
@@ -145,6 +148,7 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
   }
 
   Widget _buildEmptyState() {
+    final l = AppLocalizations.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -156,12 +160,12 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Start learning!',
+            l.learnEmptyTitle,
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 8),
           Text(
-            'Enter a Japanese prompt below to generate text',
+            l.learnEmptyHint,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey[600],
                 ),
@@ -192,7 +196,7 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Prompt: ${generated.prompt}',
+                        '${AppLocalizations.of(context).learnPromptLabel}: ${generated.prompt}',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
                               color: Colors.grey[700],
                             ),
@@ -254,10 +258,10 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
               child: TextField(
                 controller: _promptController,
                 enabled: !isLoading,
-                decoration: const InputDecoration(
-                  hintText: 'Enter a Japanese prompt... (e.g., 私は)',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(
+                decoration: InputDecoration(
+                  hintText: AppLocalizations.of(context).learnInputHint,
+                  border: const OutlineInputBorder(),
+                  contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 12,
                   ),
@@ -279,7 +283,7 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
                       ),
                     )
                   : const Icon(Icons.send),
-              label: const Text('Generate'),
+              label: Text(AppLocalizations.of(context).learnGenerate),
             ),
           ],
         ),
@@ -291,12 +295,13 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
 
+    final l = AppLocalizations.of(context);
     if (difference.inMinutes < 1) {
-      return 'Just now';
+      return l.learnJustNow;
     } else if (difference.inHours < 1) {
-      return '${difference.inMinutes}m ago';
+      return l.learnMinutesAgo(difference.inMinutes);
     } else if (difference.inDays < 1) {
-      return '${difference.inHours}h ago';
+      return l.learnHoursAgo(difference.inHours);
     } else {
       return '${timestamp.day}/${timestamp.month} ${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}';
     }
@@ -337,7 +342,7 @@ class _FocusWordBanner extends StatelessWidget {
                   style: TextStyle(
                       fontSize: 13, color: colors.onTertiaryContainer),
                   children: [
-                    const TextSpan(text: 'Practising  '),
+                    TextSpan(text: '${AppLocalizations.of(context).learnPractising}  '),
                     TextSpan(
                         text: word,
                         style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -394,7 +399,7 @@ class _GrammarThemeChip extends StatelessWidget {
           color: catColor ?? Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         label: Text(
-          selectedTheme != null ? selectedTheme!.nameJp : '文法',
+          selectedTheme != null ? selectedTheme!.nameJp : AppLocalizations.of(context).grammarTitle,
           style: TextStyle(
             fontSize:   12,
             color:      catColor,
@@ -406,8 +411,8 @@ class _GrammarThemeChip extends StatelessWidget {
             : null,
         onPressed: onTap,
         tooltip: selectedTheme != null
-            ? '${selectedTheme!.nameEn} — tap to change'
-            : 'Select grammar theme',
+            ? AppLocalizations.of(context).learnGrammarThemeTapToChange(selectedTheme!.nameEn)
+            : AppLocalizations.of(context).learnSelectGrammarTheme,
       ),
     );
   }

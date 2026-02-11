@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/grammar_theme.dart';
 import '../../providers/grammar_provider.dart';
 
@@ -79,7 +80,7 @@ class _GrammarSelectionScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('文法テーマ'),
+        title: Text(AppLocalizations.of(context).grammarTitle),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: _CategoryFilter(
@@ -93,7 +94,7 @@ class _GrammarSelectionScreenState
           if (grammarState.selected != null)
             TextButton.icon(
               icon:  const Icon(Icons.clear),
-              label: const Text('Clear'),
+              label: Text(AppLocalizations.of(context).grammarClear),
               onPressed: () =>
                   ref.read(grammarProvider.notifier).selectTheme(null),
             ),
@@ -161,7 +162,7 @@ class _GrammarSelectionScreenState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Complete these themes first:'),
+            Text(AppLocalizations.of(context).grammarCompleteFirst),
             const SizedBox(height: 12),
             ...prereqs.map((p) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2),
@@ -176,7 +177,7 @@ class _GrammarSelectionScreenState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: Text(AppLocalizations.of(context).grammarOk),
           ),
         ],
       ),
@@ -502,6 +503,7 @@ class _ThemeDetailSheet extends StatelessWidget {
     final mastery    = progress?.masteryLevel ?? 0;
     final sessions   = progress?.sessionsCount ?? 0;
 
+    final l = AppLocalizations.of(context);
     return DraggableScrollableSheet(
       expand:          false,
       initialChildSize: 0.6,
@@ -570,14 +572,14 @@ class _ThemeDetailSheet extends StatelessWidget {
             Row(
               children: [
                 _StatChip(
-                  label: 'Sessions',
+                  label: l.grammarSessions,
                   value: '$sessions',
                   icon:  Icons.play_circle_outline,
                   color: catColor,
                 ),
                 const SizedBox(width: 12),
                 _StatChip(
-                  label: 'Mastery',
+                  label: l.grammarMastery,
                   value: '★' * mastery + '☆' * (3 - mastery),
                   icon:  Icons.grade_outlined,
                   color: Colors.amber.shade700,
@@ -587,7 +589,7 @@ class _ThemeDetailSheet extends StatelessWidget {
             const SizedBox(height: 20),
 
             // ── Description ─────────────────────────────────────────────
-            Text('Description',
+            Text(l.grammarDescription,
                 style: TextStyle(
                     fontWeight: FontWeight.w700, color: Colors.grey.shade700)),
             const SizedBox(height: 6),
@@ -595,7 +597,7 @@ class _ThemeDetailSheet extends StatelessWidget {
             const SizedBox(height: 20),
 
             // ── Example ─────────────────────────────────────────────────
-            Text('Example',
+            Text(l.grammarExample,
                 style: TextStyle(
                     fontWeight: FontWeight.w700, color: Colors.grey.shade700)),
             const SizedBox(height: 8),
@@ -625,7 +627,7 @@ class _ThemeDetailSheet extends StatelessWidget {
             const SizedBox(height: 20),
 
             // ── System prompt hint ───────────────────────────────────────
-            Text('Practice focus',
+            Text(l.grammarPracticeFocus,
                 style: TextStyle(
                     fontWeight: FontWeight.w700, color: Colors.grey.shade700)),
             const SizedBox(height: 6),
@@ -637,7 +639,7 @@ class _ThemeDetailSheet extends StatelessWidget {
             FilledButton.icon(
               onPressed: onStart,
               icon:      const Icon(Icons.auto_stories),
-              label:     const Text('Practise this theme'),
+              label:     Text(l.grammarPractiseButton),
               style: FilledButton.styleFrom(
                 backgroundColor: catColor,
                 minimumSize:     const Size.fromHeight(52),

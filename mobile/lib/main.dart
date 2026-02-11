@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'l10n/app_localizations.dart';
 import 'providers/auth_provider.dart';
+import 'providers/locale_provider.dart';
 import 'providers/vocabulary_provider.dart' show focusWordProvider;
 import 'screens/auth/login_screen.dart';
 import 'screens/learn/learn_screen.dart';
@@ -11,14 +14,26 @@ void main() {
   runApp(const ProviderScope(child: GlottaApp()));
 }
 
-class GlottaApp extends StatelessWidget {
+class GlottaApp extends ConsumerWidget {
   const GlottaApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider);
+
     return MaterialApp(
       title: 'Glotta',
       debugShowCheckedModeBanner: false,
+      // ── i18n ────────────────────────────────────────────────────────────
+      locale:             locale,
+      supportedLocales:   AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      // ── Themes ──────────────────────────────────────────────────────────
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.indigo,
@@ -96,7 +111,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   void initState() {
     super.initState();
-    // Listen for focus word — automatically switch to Learn tab when one is set.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.listenManual(focusWordProvider, (_, next) {
         if (next != null) _switchToLearn();
@@ -106,6 +120,8 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+
     final pages = <Widget>[
       const LearnScreen(),
       VocabularyScreen(onPractiseWord: _switchToLearn),
@@ -119,26 +135,26 @@ class _HomePageState extends ConsumerState<HomePage> {
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) =>
             setState(() => _selectedIndex = index),
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon:         Icon(Icons.auto_stories_outlined),
-            selectedIcon: Icon(Icons.auto_stories),
-            label:        '学習',
+            icon:         const Icon(Icons.auto_stories_outlined),
+            selectedIcon: const Icon(Icons.auto_stories),
+            label:        l.navLearn,
           ),
           NavigationDestination(
-            icon:         Icon(Icons.book_outlined),
-            selectedIcon: Icon(Icons.book),
-            label:        '単語',
+            icon:         const Icon(Icons.book_outlined),
+            selectedIcon: const Icon(Icons.book),
+            label:        l.navVocabulary,
           ),
           NavigationDestination(
-            icon:         Icon(Icons.insights_outlined),
-            selectedIcon: Icon(Icons.insights),
-            label:        '進捗',
+            icon:         const Icon(Icons.insights_outlined),
+            selectedIcon: const Icon(Icons.insights),
+            label:        l.navProgress,
           ),
           NavigationDestination(
-            icon:         Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label:        '設定',
+            icon:         const Icon(Icons.settings_outlined),
+            selectedIcon: const Icon(Icons.settings),
+            label:        l.navSettings,
           ),
         ],
       ),
@@ -155,15 +171,16 @@ class ProgressPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('進捗 - Progress')),
-      body: const Center(child: Text('Progress tracking coming soon…')),
+      appBar: AppBar(title: Text(l.progressTitle)),
+      body: Center(child: Text(l.progressPlaceholder)),
     );
   }
 }
 
 // ============================================================================
-// Settings Page — shows user profile, allows JLPT level / mode change, logout
+// Settings Page
 // ============================================================================
 
 class SettingsPage extends ConsumerWidget {
@@ -174,12 +191,14 @@ class SettingsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l      = AppLocalizations.of(context);
     final auth   = ref.watch(authProvider);
     final user   = auth.user;
+    final locale = ref.watch(localeProvider);
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('設定 - Settings')),
+      appBar: AppBar(title: Text(l.settingsTitle)),
       body: ListView(
         children: [
           // ── Profile info ──────────────────────────────────────────────
@@ -198,15 +217,24 @@ class SettingsPage extends ConsumerWidget {
             const Divider(),
           ],
 
+          // ── Language ──────────────────────────────────────────────────
+          ListTile(
+            leading:  const Icon(Icons.language_outlined),
+            title:    Text(l.settingsLanguage),
+            subtitle: Text(locale.languageCode == 'fr' ? 'Français' : 'English'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _pickLocale(context, ref, locale),
+          ),
+
           // ── JLPT Level ────────────────────────────────────────────────
           ListTile(
             leading:  const Icon(Icons.school_outlined),
-            title:    const Text('JLPT Level'),
+            title:    Text(l.settingsJlptLevel),
             subtitle: Text(user?.jlptLevel ?? 'N5'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _pickOption(
               context, ref,
-              title:    'JLPT Level',
+              title:    l.settingsJlptLevel,
               options:  _levels,
               current:  user?.jlptLevel ?? 'N5',
               onSelect: (v) => ref.read(authProvider.notifier)
@@ -217,12 +245,12 @@ class SettingsPage extends ConsumerWidget {
           // ── Constraint Mode ───────────────────────────────────────────
           ListTile(
             leading:  const Icon(Icons.tune_outlined),
-            title:    const Text('Constraint Mode'),
+            title:    Text(l.settingsConstraintMode),
             subtitle: Text(user?.constraintMode ?? 'soft'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _pickOption(
               context, ref,
-              title:    'Constraint Mode',
+              title:    l.settingsConstraintMode,
               options:  _modes,
               current:  user?.constraintMode ?? 'soft',
               onSelect: (v) => ref.read(authProvider.notifier)
@@ -234,19 +262,13 @@ class SettingsPage extends ConsumerWidget {
           // ── About ─────────────────────────────────────────────────────
           ListTile(
             leading: const Icon(Icons.info_outline),
-            title:   const Text('About'),
-            onTap:   () => showAboutDialog(
+            title:   Text(l.settingsAbout),
+            onTap: () => showAboutDialog(
               context:            context,
               applicationName:    'Glotta',
               applicationVersion: '0.2.0',
               applicationIcon:    const Icon(Icons.auto_stories, size: 48),
-              children: const [
-                Text(
-                  'Language learning with constrained LLM generation.\n\n'
-                  'Learn Japanese by reading AI-generated text built '
-                  'exclusively from your personal vocabulary.',
-                ),
-              ],
+              children: [Text(l.settingsAboutText)],
             ),
           ),
           const Divider(),
@@ -254,11 +276,57 @@ class SettingsPage extends ConsumerWidget {
           // ── Logout ────────────────────────────────────────────────────
           ListTile(
             leading: Icon(Icons.logout, color: colors.error),
-            title:   Text('Sign out', style: TextStyle(color: colors.error)),
-            onTap:   () async {
+            title: Text(l.settingsSignOut,
+                style: TextStyle(color: colors.error)),
+            onTap: () async {
               await ref.read(authProvider.notifier).logout();
             },
           ),
+        ],
+      ),
+    );
+  }
+
+  void _pickLocale(BuildContext context, WidgetRef ref, Locale current) {
+    final l = AppLocalizations.of(context);
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (_) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(l.settingsLanguage,
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ),
+          ListTile(
+            leading:  const Text('🇬🇧', style: TextStyle(fontSize: 20)),
+            title:    const Text('English'),
+            trailing: current.languageCode == 'en'
+                ? const Icon(Icons.check, color: Colors.indigo)
+                : null,
+            onTap: () {
+              Navigator.pop(context);
+              ref
+                  .read(localeProvider.notifier)
+                  .setLocale(const Locale('en'));
+            },
+          ),
+          ListTile(
+            leading:  const Text('🇫🇷', style: TextStyle(fontSize: 20)),
+            title:    const Text('Français'),
+            trailing: current.languageCode == 'fr'
+                ? const Icon(Icons.check, color: Colors.indigo)
+                : null,
+            onTap: () {
+              Navigator.pop(context);
+              ref
+                  .read(localeProvider.notifier)
+                  .setLocale(const Locale('fr'));
+            },
+          ),
+          const SizedBox(height: 8),
         ],
       ),
     );
@@ -280,7 +348,8 @@ class SettingsPage extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Text(title,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ),
           ...options.map((opt) => ListTile(
                 title: Text(opt),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import 'register_screen.dart';
 
@@ -34,6 +35,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l       = AppLocalizations.of(context);
     final auth    = ref.watch(authProvider);
     final theme   = Theme.of(context);
     final colors  = theme.colorScheme;
@@ -72,7 +74,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     textAlign: TextAlign.center,
                   ),
                   Text(
-                    'Learn Japanese with constrained AI',
+                    l.appTagline,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),
@@ -85,13 +87,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     controller:   _emailCtrl,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                      labelText:   'Email',
-                      prefixIcon:  Icon(Icons.email_outlined),
-                      border:      OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText:   l.authEmail,
+                      prefixIcon:  const Icon(Icons.email_outlined),
+                      border:      const OutlineInputBorder(),
                     ),
                     validator: (v) =>
-                        v == null || !v.contains('@') ? 'Enter a valid email' : null,
+                        v == null || !v.contains('@') ? l.validEmail : null,
                   ),
                   const SizedBox(height: 16),
 
@@ -102,7 +104,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _submit(),
                     decoration: InputDecoration(
-                      labelText:  'Password',
+                      labelText:  l.authPassword,
                       prefixIcon: const Icon(Icons.lock_outline),
                       border:     const OutlineInputBorder(),
                       suffixIcon: IconButton(
@@ -114,7 +116,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     validator: (v) =>
-                        v == null || v.isEmpty ? 'Enter your password' : null,
+                        v == null || v.isEmpty ? l.validPasswordRequired : null,
                   ),
                   const SizedBox(height: 28),
 
@@ -130,7 +132,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             width:  20,
                             child:  CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Sign in', style: TextStyle(fontSize: 16)),
+                        : Text(l.authSignIn,
+                            style: const TextStyle(fontSize: 16)),
                   ),
                   const SizedBox(height: 20),
 
@@ -139,7 +142,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "Don't have an account? ",
+                        l.authNoAccount,
                         style: TextStyle(color: colors.onSurfaceVariant),
                       ),
                       GestureDetector(
@@ -149,7 +152,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                         child: Text(
-                          'Sign up',
+                          l.authSignUp,
                           style: TextStyle(
                             color:      colors.primary,
                             fontWeight: FontWeight.w600,

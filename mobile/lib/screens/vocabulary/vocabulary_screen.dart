@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/vocabulary_item.dart';
 import '../../providers/vocabulary_provider.dart';
 
@@ -51,6 +52,7 @@ class _VocabularyScreenState extends ConsumerState<VocabularyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l          = AppLocalizations.of(context);
     final vocabState = ref.watch(vocabularyProvider);
     final filtered   = _filtered(vocabState.words);
     final due        = vocabState.dueWords.length;
@@ -61,13 +63,13 @@ class _VocabularyScreenState extends ConsumerState<VocabularyScreen> {
             ? TextField(
                 controller:  _searchController,
                 autofocus:   true,
-                decoration:  const InputDecoration(
-                  hintText: 'Search…',
+                decoration:  InputDecoration(
+                  hintText: l.vocabSearch,
                   border:   InputBorder.none,
                 ),
                 onChanged: (v) => setState(() => _query = v),
               )
-            : const Text('単語帳 - Vocabulary'),
+            : Text(l.vocabTitle),
         actions: [
           // Search toggle
           IconButton(
@@ -83,10 +85,13 @@ class _VocabularyScreenState extends ConsumerState<VocabularyScreen> {
           // Seed JLPT menu
           PopupMenuButton<String>(
             icon: const Icon(Icons.download_outlined),
-            tooltip: 'Import JLPT vocabulary',
+            tooltip: l.vocabImportTooltip,
             onSelected: (level) => _confirmSeed(level),
             itemBuilder: (_) => ['N5', 'N4', 'N3', 'N2', 'N1']
-                .map((l) => PopupMenuItem(value: l, child: Text('Import $l')))
+                .map((level) => PopupMenuItem(
+                      value: level,
+                      child: Text(l.vocabImportLevel(level)),
+                    ))
                 .toList(),
           ),
         ],
@@ -102,7 +107,7 @@ class _VocabularyScreenState extends ConsumerState<VocabularyScreen> {
                 TextButton(
                   onPressed: () =>
                       ref.read(vocabularyProvider.notifier).clearError(),
-                  child: const Text('Dismiss'),
+                  child: Text(l.learnDismiss),
                 ),
               ],
               backgroundColor:
@@ -112,8 +117,8 @@ class _VocabularyScreenState extends ConsumerState<VocabularyScreen> {
           // ── Level filter chips ──────────────────────────────────────────
           _LevelFilter(
             selected: vocabState.selectedLevel,
-            onSelect: (l) =>
-                ref.read(vocabularyProvider.notifier).filterByLevel(l),
+            onSelect: (lvl) =>
+                ref.read(vocabularyProvider.notifier).filterByLevel(lvl),
           ),
 
           // ── Summary bar ─────────────────────────────────────────────────
@@ -127,7 +132,7 @@ class _VocabularyScreenState extends ConsumerState<VocabularyScreen> {
             child: vocabState.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : filtered.isEmpty
-                    ? _buildEmpty(vocabState.words.isEmpty)
+                    ? _buildEmpty(vocabState.words.isEmpty, l)
                     : RefreshIndicator(
                         onRefresh: () =>
                             ref.read(vocabularyProvider.notifier).load(),
@@ -148,13 +153,13 @@ class _VocabularyScreenState extends ConsumerState<VocabularyScreen> {
 
       floatingActionButton: FloatingActionButton.extended(
         icon:    const Icon(Icons.add),
-        label:   const Text('新しい単語'),
+        label:   Text(l.vocabAddFab),
         onPressed: () => _showAddSheet(),
       ),
     );
   }
 
-  Widget _buildEmpty(bool noWords) {
+  Widget _buildEmpty(bool noWords, AppLocalizations l) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -163,13 +168,13 @@ class _VocabularyScreenState extends ConsumerState<VocabularyScreen> {
               size: 72, color: Theme.of(context).colorScheme.outlineVariant),
           const SizedBox(height: 16),
           Text(
-            noWords ? 'No vocabulary yet' : 'No words match your search',
+            noWords ? l.vocabNoWords : l.vocabNoResults,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
           if (noWords)
             Text(
-              'Tap + to add a word, or import a JLPT level.',
+              l.vocabEmptyHint,
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
@@ -193,13 +198,14 @@ class _VocabularyScreenState extends ConsumerState<VocabularyScreen> {
       ),
       builder: (_) => _AddWordSheet(
         onSaved: (item) {
+          final l = AppLocalizations.of(context);
           // After saving, offer to practise
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('「${item.word}」added!'),
+              content: Text(l.vocabWordAdded(item.word)),
               duration: const Duration(seconds: 4),
               action: SnackBarAction(
-                label:     'Practise now',
+                label:     l.vocabPractiseNow,
                 onPressed: () => _practise(item),
               ),
             ),
@@ -219,21 +225,22 @@ class _VocabularyScreenState extends ConsumerState<VocabularyScreen> {
   // ── Confirm delete ─────────────────────────────────────────────────────────
 
   Future<void> _confirmDelete(VocabularyItem item) async {
+    final l  = AppLocalizations.of(context);
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title:   const Text('Delete word?'),
-        content: Text('Remove「${item.word}」from your vocabulary?'),
+        title:   Text(l.vocabDeleteTitle),
+        content: Text(l.vocabDeleteContent(item.word)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+              child: Text(l.vocabCancel)),
           FilledButton(
               style: FilledButton.styleFrom(
                   backgroundColor:
                       Theme.of(context).colorScheme.error),
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Delete')),
+              child: Text(l.vocabDeleteButton)),
         ],
       ),
     );
@@ -245,21 +252,19 @@ class _VocabularyScreenState extends ConsumerState<VocabularyScreen> {
   // ── Confirm seed ───────────────────────────────────────────────────────────
 
   Future<void> _confirmSeed(String level) async {
+    final l  = AppLocalizations.of(context);
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title:   Text('Import $level vocabulary?'),
-        content: Text(
-          'This will add all $level words from the JLPT dataset '
-          'to your personal vocabulary.',
-        ),
+        title:   Text(l.vocabImportConfirmTitle(level)),
+        content: Text(l.vocabImportConfirmContent(level)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+              child: Text(l.vocabCancel)),
           FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Import')),
+              child: Text(l.vocabImportButton)),
         ],
       ),
     );
@@ -279,6 +284,7 @@ class _LevelFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     const levels = ['N5', 'N4', 'N3', 'N2', 'N1'];
     return SizedBox(
       height: 48,
@@ -289,18 +295,18 @@ class _LevelFilter extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
             child: FilterChip(
-              label:      const Text('All'),
+              label:      Text(l.vocabLevelAll),
               selected:   selected == null,
               onSelected: (_) => onSelect(null),
             ),
           ),
-          ...levels.map((l) => Padding(
+          ...levels.map((lvl) => Padding(
                 padding: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
                 child: FilterChip(
-                  label:    Text(l),
-                  selected: selected == l,
-                  selectedColor: _levelColor(l).withOpacity(0.25),
-                  onSelected: (_) => onSelect(selected == l ? null : l),
+                  label:    Text(lvl),
+                  selected: selected == lvl,
+                  selectedColor: _levelColor(lvl).withOpacity(0.25),
+                  onSelected: (_) => onSelect(selected == lvl ? null : lvl),
                 ),
               )),
         ],
@@ -319,15 +325,16 @@ class _SummaryBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l      = AppLocalizations.of(context);
     final colors = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       color:   colors.surfaceContainerLow,
       child: Row(children: [
-        _Stat(label: 'Words', value: '$total', color: colors.primary),
+        _Stat(label: l.vocabStatsWords, value: '$total', color: colors.primary),
         const SizedBox(width: 20),
         _Stat(
-          label: 'Due today',
+          label: l.vocabStatsDue,
           value: '$due',
           color: due > 0 ? const Color(0xFFFF9800) : colors.outline,
         ),
@@ -483,9 +490,9 @@ class _WordCard extends StatelessWidget {
                         color:        const Color(0xFFFF9800).withOpacity(0.15),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Text(
-                        'Due',
-                        style: TextStyle(
+                      child: Text(
+                        AppLocalizations.of(context).vocabBadgeDue,
+                        style: const TextStyle(
                           color:      Color(0xFFE65100),
                           fontSize:   10,
                           fontWeight: FontWeight.bold,
@@ -512,6 +519,7 @@ class _WordCard extends StatelessWidget {
   }
 
   void _showOptions(BuildContext context) {
+    final l = AppLocalizations.of(context);
     showModalBottomSheet<void>(
       context: context,
       builder: (_) => Column(
@@ -519,12 +527,13 @@ class _WordCard extends StatelessWidget {
         children: [
           ListTile(
             leading:  const Icon(Icons.play_circle_outline),
-            title:    Text('Practise「${word.word}」'),
+            title:    Text(l.vocabPractiseWord(word.word)),
             onTap: () { Navigator.pop(context); onPractise(); },
           ),
           ListTile(
             leading:  const Icon(Icons.delete_outline, color: Colors.red),
-            title:    const Text('Delete', style: TextStyle(color: Colors.red)),
+            title:    Text(l.vocabDeleteButton,
+                style: const TextStyle(color: Colors.red)),
             onTap: () { Navigator.pop(context); onDelete(); },
           ),
           const SizedBox(height: 8),
@@ -585,6 +594,7 @@ class _AddWordSheetState extends ConsumerState<_AddWordSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Padding(
       padding: EdgeInsets.only(
         left:   24,
@@ -610,20 +620,20 @@ class _AddWordSheetState extends ConsumerState<_AddWordSheet> {
               ),
             ),
 
-            Text('新しい単語を追加',
+            Text(l.vocabAddSheetTitle,
                 style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 20),
 
             // Word (required)
             TextFormField(
               controller:    _wordCtrl,
-              decoration:    const InputDecoration(
-                labelText: '単語 *',
-                hintText:  '例：猫、食べる、きれい',
-                border:    OutlineInputBorder(),
+              decoration:    InputDecoration(
+                labelText: l.vocabWordField,
+                hintText:  l.vocabWordHint,
+                border:    const OutlineInputBorder(),
               ),
               validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
+                  v == null || v.trim().isEmpty ? l.validRequired : null,
               textInputAction: TextInputAction.next,
             ),
             const SizedBox(height: 14),
@@ -631,10 +641,10 @@ class _AddWordSheetState extends ConsumerState<_AddWordSheet> {
             // Reading (optional)
             TextFormField(
               controller:  _readCtrl,
-              decoration:  const InputDecoration(
-                labelText: '読み方（ふりがな）',
-                hintText:  '例：ねこ、たべる',
-                border:    OutlineInputBorder(),
+              decoration:  InputDecoration(
+                labelText: l.vocabReadingField,
+                hintText:  l.vocabReadingHint,
+                border:    const OutlineInputBorder(),
               ),
               textInputAction: TextInputAction.next,
             ),
@@ -643,10 +653,10 @@ class _AddWordSheetState extends ConsumerState<_AddWordSheet> {
             // Meaning (optional)
             TextFormField(
               controller:  _meaningCtrl,
-              decoration:  const InputDecoration(
-                labelText: '意味（英語）',
-                hintText:  'e.g. cat, to eat',
-                border:    OutlineInputBorder(),
+              decoration:  InputDecoration(
+                labelText: l.vocabMeaningField,
+                hintText:  l.vocabMeaningHint,
+                border:    const OutlineInputBorder(),
               ),
               textInputAction: TextInputAction.done,
               onFieldSubmitted: (_) => _save(),
@@ -656,13 +666,13 @@ class _AddWordSheetState extends ConsumerState<_AddWordSheet> {
             // JLPT Level picker
             DropdownButtonFormField<String>(
               value:       _level,
-              decoration:  const InputDecoration(
-                labelText: 'JLPT Level',
-                border:    OutlineInputBorder(),
+              decoration:  InputDecoration(
+                labelText: l.vocabLevelField,
+                border:    const OutlineInputBorder(),
               ),
-              hint:        const Text('Optional'),
+              hint:        Text(l.vocabLevelOptional),
               items: ['N5', 'N4', 'N3', 'N2', 'N1']
-                  .map((l) => DropdownMenuItem(value: l, child: Text(l)))
+                  .map((lvl) => DropdownMenuItem(value: lvl, child: Text(lvl)))
                   .toList(),
               onChanged: (v) => setState(() => _level = v),
             ),
@@ -678,7 +688,7 @@ class _AddWordSheetState extends ConsumerState<_AddWordSheet> {
                           strokeWidth: 2, color: Colors.white),
                     )
                   : const Icon(Icons.check),
-              label: const Text('Add word'),
+              label: Text(l.vocabSaveButton),
               style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(50)),
             ),

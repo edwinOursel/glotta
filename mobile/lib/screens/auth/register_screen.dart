@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import 'login_screen.dart';
 
@@ -50,6 +51,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l      = AppLocalizations.of(context);
     final auth   = ref.watch(authProvider);
     final theme  = Theme.of(context);
     final colors = theme.colorScheme;
@@ -64,7 +66,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create account'),
+        title: Text(l.authCreateAccount),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pushReplacement(
@@ -85,13 +87,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   controller:      _emailCtrl,
                   keyboardType:    TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(
-                    labelText:  'Email',
-                    prefixIcon: Icon(Icons.email_outlined),
-                    border:     OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText:  l.authEmail,
+                    prefixIcon: const Icon(Icons.email_outlined),
+                    border:     const OutlineInputBorder(),
                   ),
                   validator: (v) =>
-                      v == null || !v.contains('@') ? 'Enter a valid email' : null,
+                      v == null || !v.contains('@') ? l.validEmail : null,
                 ),
                 const SizedBox(height: 16),
 
@@ -99,10 +101,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 TextFormField(
                   controller:      _usernameCtrl,
                   textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(
-                    labelText:   'Username (optional)',
-                    prefixIcon:  Icon(Icons.person_outline),
-                    border:      OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText:   l.authUsernameOptional,
+                    prefixIcon:  const Icon(Icons.person_outline),
+                    border:      const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -110,19 +112,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 // ── JLPT level ────────────────────────────────────────────
                 DropdownButtonFormField<String>(
                   value:       _selectedLevel,
-                  decoration:  const InputDecoration(
-                    labelText:  'Starting JLPT level',
-                    prefixIcon: Icon(Icons.school_outlined),
-                    border:     OutlineInputBorder(),
+                  decoration:  InputDecoration(
+                    labelText:  l.authStartingLevel,
+                    prefixIcon: const Icon(Icons.school_outlined),
+                    border:     const OutlineInputBorder(),
                   ),
                   items: _levels
-                      .map((l) => DropdownMenuItem(value: l, child: Text(l)))
+                      .map((lvl) =>
+                          DropdownMenuItem(value: lvl, child: Text(lvl)))
                       .toList(),
                   onChanged: (v) => setState(() => _selectedLevel = v!),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'N5 = beginner · N1 = advanced',
+                  l.authLevelHint,
                   style: theme.textTheme.bodySmall
                       ?.copyWith(color: colors.onSurfaceVariant),
                 ),
@@ -134,7 +137,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   obscureText:     _obscurePassword,
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
-                    labelText:  'Password',
+                    labelText:  l.authPassword,
                     prefixIcon: const Icon(Icons.lock_outline),
                     border:     const OutlineInputBorder(),
                     suffixIcon: IconButton(
@@ -145,9 +148,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
-                  validator: (v) => v == null || v.length < 8
-                      ? 'Password must be at least 8 characters'
-                      : null,
+                  validator: (v) =>
+                      v == null || v.length < 8 ? l.validPasswordLength : null,
                 ),
                 const SizedBox(height: 16),
 
@@ -157,14 +159,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   obscureText:     true,
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) => _submit(),
-                  decoration: const InputDecoration(
-                    labelText:  'Confirm password',
-                    prefixIcon: Icon(Icons.lock_outline),
-                    border:     OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText:  l.authConfirmPassword,
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    border:     const OutlineInputBorder(),
                   ),
-                  validator: (v) => v != _passwordCtrl.text
-                      ? 'Passwords do not match'
-                      : null,
+                  validator: (v) =>
+                      v != _passwordCtrl.text ? l.validPasswordMismatch : null,
                 ),
                 const SizedBox(height: 28),
 
@@ -180,7 +181,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           width:  20,
                           child:  CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Create account', style: TextStyle(fontSize: 16)),
+                      : Text(l.authCreateAccount,
+                          style: const TextStyle(fontSize: 16)),
                 ),
                 const SizedBox(height: 20),
 
@@ -189,7 +191,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Already have an account? ',
+                      l.authAlreadyHaveAccount,
                       style: TextStyle(color: colors.onSurfaceVariant),
                     ),
                     GestureDetector(
@@ -197,7 +199,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         MaterialPageRoute(builder: (_) => const LoginScreen()),
                       ),
                       child: Text(
-                        'Sign in',
+                        l.authSignIn,
                         style: TextStyle(
                           color:      colors.primary,
                           fontWeight: FontWeight.w600,

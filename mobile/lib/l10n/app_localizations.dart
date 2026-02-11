@@ -87,9 +87,70 @@ abstract class AppLocalizations {
   String get grammarSessions;
   String get grammarMastery;
 
-  // ── Progress ─────────────────────────────────────────────────────────────
+  // ── Progress / Stats ─────────────────────────────────────────────────────
   String get progressTitle;
   String get progressPlaceholder;
+  String get progressStatsWords;
+  String get progressStatsDue;
+  String get progressStatsSessions;
+  String get progressStatsStreak;
+  String get progressStreakDays;
+  String get progressLongestStreak;
+  String get progressJlptProgress;
+  String get progressGrammarProgress;
+  String get progressTrophies;
+  String get progressTrophiesUnlocked;
+  String progressTrophyCount(int unlocked, int total);
+
+  // ── Trophies ──────────────────────────────────────────────────────────────
+  String get trophyNewUnlocked;
+  // First steps
+  String get trophyFirstWordName;
+  String get trophyFirstWordDesc;
+  String get trophyFirstGenerationName;
+  String get trophyFirstGenerationDesc;
+  String get trophyFirstThemeName;
+  String get trophyFirstThemeDesc;
+  // Vocabulary count
+  String get trophyVocab10Name;
+  String get trophyVocab10Desc;
+  String get trophyVocab50Name;
+  String get trophyVocab50Desc;
+  String get trophyVocab100Name;
+  String get trophyVocab100Desc;
+  String get trophyVocab500Name;
+  String get trophyVocab500Desc;
+  // Vocabulary mastery
+  String get trophyAccuracy80Name;
+  String get trophyAccuracy80Desc;
+  String get trophyMastered10Name;
+  String get trophyMastered10Desc;
+  String get trophyMastered50Name;
+  String get trophyMastered50Desc;
+  // Generation
+  String get trophyGenerations10Name;
+  String get trophyGenerations10Desc;
+  String get trophyGenerations50Name;
+  String get trophyGenerations50Desc;
+  String get trophyGenerations200Name;
+  String get trophyGenerations200Desc;
+  // Grammar
+  String get trophyThemes5Name;
+  String get trophyThemes5Desc;
+  String get trophyThemesMastered5Name;
+  String get trophyThemesMastered5Desc;
+  String get trophyN5CompleteName;
+  String get trophyN5CompleteDesc;
+  // Streaks
+  String get trophyStreak3Name;
+  String get trophyStreak3Desc;
+  String get trophyStreak7Name;
+  String get trophyStreak7Desc;
+  String get trophyStreak30Name;
+  String get trophyStreak30Desc;
+  // Focus practice
+  String get trophyFocusPractice10Name;
+  String get trophyFocusPractice10Desc;
 
   // ── Settings ─────────────────────────────────────────────────────────────
   String get settingsTitle;
@@ -229,8 +290,62 @@ class _EnLocalizations extends AppLocalizations {
   @override String get grammarSessions      => 'Sessions';
   @override String get grammarMastery       => 'Mastery';
 
-  @override String get progressTitle        => '進捗 - Progress';
-  @override String get progressPlaceholder  => 'Progress tracking coming soon…';
+  @override String get progressTitle            => '進捗 - Progress';
+  @override String get progressPlaceholder      => 'Progress tracking coming soon…';
+  @override String get progressStatsWords       => 'Words';
+  @override String get progressStatsDue         => 'Due today';
+  @override String get progressStatsSessions    => 'Sessions';
+  @override String get progressStatsStreak      => 'Streak';
+  @override String get progressStreakDays       => 'days';
+  @override String get progressLongestStreak    => 'Best streak';
+  @override String get progressJlptProgress     => 'Vocabulary by JLPT level';
+  @override String get progressGrammarProgress  => 'Grammar mastery';
+  @override String get progressTrophies         => 'Trophies';
+  @override String get progressTrophiesUnlocked => 'unlocked';
+  @override String progressTrophyCount(int unlocked, int total) =>
+      '$unlocked / $total trophies unlocked';
+
+  @override String get trophyNewUnlocked          => 'Trophy unlocked!';
+  @override String get trophyFirstWordName        => 'First Word';
+  @override String get trophyFirstWordDesc        => 'Add your first word to the vocabulary';
+  @override String get trophyFirstGenerationName  => 'First Text';
+  @override String get trophyFirstGenerationDesc  => 'Generate your first Japanese text';
+  @override String get trophyFirstThemeName       => 'Grammar Student';
+  @override String get trophyFirstThemeDesc       => 'Select your first grammar theme';
+  @override String get trophyVocab10Name          => 'Getting Started';
+  @override String get trophyVocab10Desc          => 'Have 10 words in your vocabulary';
+  @override String get trophyVocab50Name          => 'Bookworm';
+  @override String get trophyVocab50Desc          => 'Have 50 words in your vocabulary';
+  @override String get trophyVocab100Name         => 'Lexicon';
+  @override String get trophyVocab100Desc         => 'Have 100 words in your vocabulary';
+  @override String get trophyVocab500Name         => 'The Library';
+  @override String get trophyVocab500Desc         => 'Have 500 words in your vocabulary';
+  @override String get trophyAccuracy80Name       => 'Sharp Mind';
+  @override String get trophyAccuracy80Desc       => 'Achieve 80%+ accuracy over 20+ reviewed words';
+  @override String get trophyMastered10Name       => 'Star Collector';
+  @override String get trophyMastered10Desc       => 'Fully master 10 words (level 5)';
+  @override String get trophyMastered50Name       => 'Word Master';
+  @override String get trophyMastered50Desc       => 'Fully master 50 words (level 5)';
+  @override String get trophyGenerations10Name    => 'Scribbler';
+  @override String get trophyGenerations10Desc    => 'Generate 10 Japanese texts';
+  @override String get trophyGenerations50Name    => 'Author';
+  @override String get trophyGenerations50Desc    => 'Generate 50 Japanese texts';
+  @override String get trophyGenerations200Name   => 'Storyteller';
+  @override String get trophyGenerations200Desc   => 'Generate 200 Japanese texts';
+  @override String get trophyThemes5Name          => 'Polyglot';
+  @override String get trophyThemes5Desc          => 'Practice 5 different grammar themes';
+  @override String get trophyThemesMastered5Name  => 'Grammar Guru';
+  @override String get trophyThemesMastered5Desc  => 'Fully master 5 grammar themes';
+  @override String get trophyN5CompleteName       => 'N5 Champion';
+  @override String get trophyN5CompleteDesc       => 'Master all N5 grammar themes';
+  @override String get trophyStreak3Name          => 'On Fire';
+  @override String get trophyStreak3Desc          => 'Study 3 days in a row';
+  @override String get trophyStreak7Name          => 'Dedicated';
+  @override String get trophyStreak7Desc          => 'Study 7 days in a row';
+  @override String get trophyStreak30Name         => 'Unstoppable';
+  @override String get trophyStreak30Desc         => 'Study 30 days in a row';
+  @override String get trophyFocusPractice10Name  => 'Word Whisperer';
+  @override String get trophyFocusPractice10Desc  => 'Practise a focus word 10 times';
 
   @override String get settingsTitle        => '設定 - Settings';
   @override String get settingsLanguage     => 'Language';
@@ -338,8 +453,62 @@ class _FrLocalizations extends AppLocalizations {
   @override String get grammarSessions      => 'Sessions';
   @override String get grammarMastery       => 'Maîtrise';
 
-  @override String get progressTitle        => '進捗 - Progrès';
-  @override String get progressPlaceholder  => 'Le suivi des progrès arrive bientôt…';
+  @override String get progressTitle            => '進捗 - Progrès';
+  @override String get progressPlaceholder      => 'Le suivi des progrès arrive bientôt…';
+  @override String get progressStatsWords       => 'Mots';
+  @override String get progressStatsDue         => 'À revoir';
+  @override String get progressStatsSessions    => 'Sessions';
+  @override String get progressStatsStreak      => 'Série';
+  @override String get progressStreakDays       => 'jours';
+  @override String get progressLongestStreak    => 'Meilleure série';
+  @override String get progressJlptProgress     => 'Vocabulaire par niveau JLPT';
+  @override String get progressGrammarProgress  => 'Maîtrise de la grammaire';
+  @override String get progressTrophies         => 'Trophées';
+  @override String get progressTrophiesUnlocked => 'débloqués';
+  @override String progressTrophyCount(int unlocked, int total) =>
+      '$unlocked / $total trophées débloqués';
+
+  @override String get trophyNewUnlocked          => 'Trophée débloqué !';
+  @override String get trophyFirstWordName        => 'Premier mot';
+  @override String get trophyFirstWordDesc        => 'Ajoutez votre premier mot au vocabulaire';
+  @override String get trophyFirstGenerationName  => 'Premier texte';
+  @override String get trophyFirstGenerationDesc  => 'Générez votre premier texte en japonais';
+  @override String get trophyFirstThemeName       => 'Étudiant en grammaire';
+  @override String get trophyFirstThemeDesc       => 'Sélectionnez votre premier thème grammatical';
+  @override String get trophyVocab10Name          => 'Les premiers pas';
+  @override String get trophyVocab10Desc          => 'Avoir 10 mots dans votre vocabulaire';
+  @override String get trophyVocab50Name          => 'Lecteur assidu';
+  @override String get trophyVocab50Desc          => 'Avoir 50 mots dans votre vocabulaire';
+  @override String get trophyVocab100Name         => 'Lexique';
+  @override String get trophyVocab100Desc         => 'Avoir 100 mots dans votre vocabulaire';
+  @override String get trophyVocab500Name         => 'La bibliothèque';
+  @override String get trophyVocab500Desc         => 'Avoir 500 mots dans votre vocabulaire';
+  @override String get trophyAccuracy80Name       => 'Esprit vif';
+  @override String get trophyAccuracy80Desc       => 'Atteindre 80 %+ de précision sur 20+ mots révisés';
+  @override String get trophyMastered10Name       => 'Collectionneur d\'étoiles';
+  @override String get trophyMastered10Desc       => 'Maîtriser parfaitement 10 mots (niveau 5)';
+  @override String get trophyMastered50Name       => 'Maître des mots';
+  @override String get trophyMastered50Desc       => 'Maîtriser parfaitement 50 mots (niveau 5)';
+  @override String get trophyGenerations10Name    => 'Gribouilleur';
+  @override String get trophyGenerations10Desc    => 'Générer 10 textes en japonais';
+  @override String get trophyGenerations50Name    => 'Auteur';
+  @override String get trophyGenerations50Desc    => 'Générer 50 textes en japonais';
+  @override String get trophyGenerations200Name   => 'Conteur';
+  @override String get trophyGenerations200Desc   => 'Générer 200 textes en japonais';
+  @override String get trophyThemes5Name          => 'Polyglotte';
+  @override String get trophyThemes5Desc          => 'Pratiquer 5 thèmes grammaticaux différents';
+  @override String get trophyThemesMastered5Name  => 'Gourou de la grammaire';
+  @override String get trophyThemesMastered5Desc  => 'Maîtriser parfaitement 5 thèmes grammaticaux';
+  @override String get trophyN5CompleteName       => 'Champion N5';
+  @override String get trophyN5CompleteDesc       => 'Maîtriser tous les thèmes grammaticaux N5';
+  @override String get trophyStreak3Name          => 'En feu !';
+  @override String get trophyStreak3Desc          => 'Étudier 3 jours consécutifs';
+  @override String get trophyStreak7Name          => 'Persévérant';
+  @override String get trophyStreak7Desc          => 'Étudier 7 jours consécutifs';
+  @override String get trophyStreak30Name         => 'Inarrêtable';
+  @override String get trophyStreak30Desc         => 'Étudier 30 jours consécutifs';
+  @override String get trophyFocusPractice10Name  => 'Chuchoteur de mots';
+  @override String get trophyFocusPractice10Desc  => 'Pratiquer un mot cible 10 fois';
 
   @override String get settingsTitle        => '設定 - Paramètres';
   @override String get settingsLanguage     => 'Langue';

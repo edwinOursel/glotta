@@ -3,11 +3,16 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'l10n/app_localizations.dart';
+import 'models/trophy.dart';
 import 'providers/auth_provider.dart';
+import 'providers/gamification_provider.dart';
+import 'providers/generation_provider.dart' show generationProvider;
 import 'providers/locale_provider.dart'; // also exports navStyleProvider
-import 'providers/vocabulary_provider.dart' show focusWordProvider;
+import 'providers/vocabulary_provider.dart'
+    show focusWordProvider, vocabularyProvider;
 import 'screens/auth/login_screen.dart';
 import 'screens/learn/learn_screen.dart';
+import 'screens/progress/progress_screen.dart';
 import 'screens/vocabulary/vocabulary_screen.dart';
 
 void main() {
@@ -112,10 +117,56 @@ class _HomePageState extends ConsumerState<HomePage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Switch to learn tab when a focus word is set from vocabulary
       ref.listenManual(focusWordProvider, (_, next) {
-        if (next != null) _switchToLearn();
+        if (next != null) {
+          _switchToLearn();
+          ref.read(focusPracticesCountProvider.notifier).increment();
+        }
+      });
+
+      // Track generation count, streak, and trophy unlocks
+      ref.listenManual(generationProvider, (prev, next) {
+        if (prev == null) return;
+        if (next.history.length > (prev.history.length)) {
+          ref.read(generationsCountProvider.notifier).increment();
+          ref.read(streakProvider.notifier).recordActivity();
+          ref.read(trophyProvider.notifier).evaluate().then((_) {
+            _showNewTrophies();
+          });
+        }
+      });
+
+      // Also evaluate trophies when vocabulary changes (word added/deleted/seeded)
+      ref.listenManual(vocabularyProvider, (prev, next) {
+        if (prev == null) return;
+        if (next.allWords.length != prev.allWords.length) {
+          ref.read(streakProvider.notifier).recordActivity();
+          ref.read(trophyProvider.notifier).evaluate().then((_) {
+            _showNewTrophies();
+          });
+        }
       });
     });
+  }
+
+  void _showNewTrophies() {
+    final newly = ref.read(trophyProvider).newlyUnlocked;
+    if (newly.isEmpty || !mounted) return;
+    ref.read(trophyProvider.notifier).clearNewlyUnlocked();
+
+    final l = AppLocalizations.of(context);
+    for (final id in newly) {
+      final def = kTrophies.firstWhere((t) => t.id == id,
+          orElse: () => kTrophies.first);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${def.emoji}  ${l.trophyNewUnlocked}'),
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
@@ -132,7 +183,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     final pages = <Widget>[
       const LearnScreen(),
       VocabularyScreen(onPractiseWord: _switchToLearn),
-      const ProgressPage(),
+      const ProgressScreen(),
       const SettingsPage(),
     ];
 
@@ -165,23 +216,6 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
         ],
       ),
-    );
-  }
-}
-
-// ============================================================================
-// Progress Page — placeholder
-// ============================================================================
-
-class ProgressPage extends StatelessWidget {
-  const ProgressPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    return Scaffold(
-      appBar: AppBar(title: Text(l.progressTitle)),
-      body: Center(child: Text(l.progressPlaceholder)),
     );
   }
 }

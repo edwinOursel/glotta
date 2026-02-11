@@ -10,13 +10,15 @@ export '../providers/generation_provider.dart' show focusWordProvider;
 // ── State ─────────────────────────────────────────────────────────────────────
 
 class VocabularyState {
-  final List<VocabularyItem> words;
+  final List<VocabularyItem> words;     // current filtered view (for display)
+  final List<VocabularyItem> allWords;  // complete list regardless of filter
   final bool   isLoading;
   final String? error;
   final String? selectedLevel;  // null = all
 
   const VocabularyState({
     this.words         = const [],
+    this.allWords      = const [],
     this.isLoading     = false,
     this.error,
     this.selectedLevel,
@@ -24,6 +26,7 @@ class VocabularyState {
 
   VocabularyState copyWith({
     List<VocabularyItem>? words,
+    List<VocabularyItem>? allWords,
     bool?   isLoading,
     String? error,
     String? selectedLevel,
@@ -32,6 +35,7 @@ class VocabularyState {
   }) =>
       VocabularyState(
         words:         words         ?? this.words,
+        allWords:      allWords      ?? this.allWords,
         isLoading:     isLoading     ?? this.isLoading,
         error:         clearError    ? null : error ?? this.error,
         selectedLevel: clearSelectedLevel ? null : selectedLevel ?? this.selectedLevel,
@@ -64,14 +68,28 @@ class VocabularyNotifier extends StateNotifier<VocabularyState> {
         state = state.copyWith(isLoading: false);
         return;
       }
-      final api = _ref.read(apiServiceProvider);
-      final raw = await api.getUserVocabulary(
+      final api      = _ref.read(apiServiceProvider);
+      final rawFilt  = await api.getUserVocabulary(
         accessToken: token,
         level:       state.selectedLevel,
-        limit:       200,
+        limit:       500,
       );
+      final filtered = rawFilt.map(VocabularyItem.fromJson).toList();
+
+      // Also keep an unfiltered total for stats/trophies
+      List<VocabularyItem> all = filtered;
+      if (state.selectedLevel != null) {
+        final rawAll = await api.getUserVocabulary(
+          accessToken: token,
+          level:       null,
+          limit:       500,
+        );
+        all = rawAll.map(VocabularyItem.fromJson).toList();
+      }
+
       state = state.copyWith(
-        words:     raw.map(VocabularyItem.fromJson).toList(),
+        words:     filtered,
+        allWords:  all,
         isLoading: false,
       );
     } catch (e) {
@@ -116,6 +134,7 @@ class VocabularyNotifier extends StateNotifier<VocabularyState> {
       final item = VocabularyItem.fromJson(raw);
       state = state.copyWith(
         words:     [item, ...state.words],
+        allWords:  [item, ...state.allWords],
         isLoading: false,
       );
       return item;
@@ -137,7 +156,8 @@ class VocabularyNotifier extends StateNotifier<VocabularyState> {
       final api = _ref.read(apiServiceProvider);
       await api.deleteWord(accessToken: token, id: id);
       state = state.copyWith(
-        words: state.words.where((w) => w.id != id).toList(),
+        words:    state.words.where((w) => w.id != id).toList(),
+        allWords: state.allWords.where((w) => w.id != id).toList(),
       );
     } catch (e) {
       state = state.copyWith(error: 'Failed to delete word: $e');

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'providers/auth_provider.dart';
+import 'providers/vocabulary_provider.dart' show focusWordProvider;
 import 'screens/auth/login_screen.dart';
 import 'screens/learn/learn_screen.dart';
+import 'screens/vocabulary/vocabulary_screen.dart';
 
 void main() {
   runApp(const ProviderScope(child: GlottaApp()));
@@ -79,27 +81,40 @@ class _AuthGateState extends ConsumerState<AuthGate> {
 // Main app shell with bottom navigation
 // ============================================================================
 
-class HomePage extends StatefulWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends ConsumerState<HomePage> {
   int _selectedIndex = 0;
 
-  static const List<Widget> _pages = <Widget>[
-    LearnScreen(),
-    VocabularyPage(),
-    ProgressPage(),
-    SettingsPage(),
-  ];
+  void _switchToLearn() => setState(() => _selectedIndex = 0);
+
+  @override
+  void initState() {
+    super.initState();
+    // Listen for focus word — automatically switch to Learn tab when one is set.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.listenManual(focusWordProvider, (_, next) {
+        if (next != null) _switchToLearn();
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final pages = <Widget>[
+      const LearnScreen(),
+      VocabularyScreen(onPractiseWord: _switchToLearn),
+      const ProgressPage(),
+      const SettingsPage(),
+    ];
+
     return Scaffold(
-      body: _pages[_selectedIndex],
+      body: pages[_selectedIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) =>
@@ -127,22 +142,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-    );
-  }
-}
-
-// ============================================================================
-// Vocabulary Page — placeholder
-// ============================================================================
-
-class VocabularyPage extends StatelessWidget {
-  const VocabularyPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('単語帳 - Vocabulary')),
-      body: const Center(child: Text('Vocabulary management coming soon…')),
     );
   }
 }

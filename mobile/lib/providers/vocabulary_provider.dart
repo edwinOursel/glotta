@@ -1,189 +1,177 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/word.dart';
-import '../services/database_service.dart';
 
-// Database service provider
-final databaseServiceProvider = Provider<DatabaseService>((ref) {
-  return DatabaseService();
-});
+import '../models/vocabulary_item.dart';
+import '../providers/auth_provider.dart';
+import '../providers/generation_provider.dart'
+    show apiServiceProvider, focusWordProvider;
 
-// Vocabulary state
+export '../providers/generation_provider.dart' show focusWordProvider;
+
+// ── State ─────────────────────────────────────────────────────────────────────
+
 class VocabularyState {
-  final List<Word> words;
-  final bool isLoading;
+  final List<VocabularyItem> words;
+  final bool   isLoading;
   final String? error;
-  final String? selectedLevel;
+  final String? selectedLevel;  // null = all
 
   const VocabularyState({
-    this.words = const [],
-    this.isLoading = false,
+    this.words         = const [],
+    this.isLoading     = false,
     this.error,
     this.selectedLevel,
   });
 
   VocabularyState copyWith({
-    List<Word>? words,
-    bool? isLoading,
+    List<VocabularyItem>? words,
+    bool?   isLoading,
     String? error,
     String? selectedLevel,
-  }) {
-    return VocabularyState(
-      words: words ?? this.words,
-      isLoading: isLoading ?? this.isLoading,
-      error: error,
-      selectedLevel: selectedLevel ?? this.selectedLevel,
-    );
-  }
+    bool    clearError         = false,
+    bool    clearSelectedLevel = false,
+  }) =>
+      VocabularyState(
+        words:         words         ?? this.words,
+        isLoading:     isLoading     ?? this.isLoading,
+        error:         clearError    ? null : error ?? this.error,
+        selectedLevel: clearSelectedLevel ? null : selectedLevel ?? this.selectedLevel,
+      );
+
+  // Due words are those whose nextReviewAt is in the past.
+  List<VocabularyItem> get dueWords =>
+      words.where((w) => w.isDueForReview).toList();
 }
 
-// Vocabulary provider
-final vocabularyProvider =
-    StateNotifierProvider<VocabularyNotifier, VocabularyState>((ref) {
-  final dbService = ref.watch(databaseServiceProvider);
-  return VocabularyNotifier(dbService);
-});
+// ── Notifier ──────────────────────────────────────────────────────────────────
 
 class VocabularyNotifier extends StateNotifier<VocabularyState> {
-  final DatabaseService dbService;
+  final Ref _ref;
 
-  VocabularyNotifier(this.dbService) : super(const VocabularyState()) {
-    loadVocabulary();
+  VocabularyNotifier(this._ref) : super(const VocabularyState()) {
+    load();
   }
 
-  Future<void> loadVocabulary() async {
-    state = state.copyWith(isLoading: true, error: null);
+  Future<String?> _token() =>
+      _ref.read(authProvider.notifier).getAccessToken();
 
+  // ── Load ───────────────────────────────────────────────────────────────────
+
+  Future<void> load() async {
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final words = state.selectedLevel != null
-          ? await dbService.getVocabularyByLevel(state.selectedLevel!)
-          : await dbService.getVocabulary();
-
+      final token = await _token();
+      if (token == null) {
+        state = state.copyWith(isLoading: false);
+        return;
+      }
+      final api = _ref.read(apiServiceProvider);
+      final raw = await api.getUserVocabulary(
+        accessToken: token,
+        level:       state.selectedLevel,
+        limit:       200,
+      );
       state = state.copyWith(
-        words: words,
+        words:     raw.map(VocabularyItem.fromJson).toList(),
         isLoading: false,
       );
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        error: 'Failed to load vocabulary: ${e.toString()}',
+        error: 'Failed to load vocabulary: $e',
       );
     }
   }
 
-  Future<void> addWord(Word word) async {
-    try {
-      await dbService.insertWord(word);
-      await loadVocabulary(); // Reload to get updated list
-    } catch (e) {
-      state = state.copyWith(
-        error: 'Failed to add word: ${e.toString()}',
-      );
-    }
-  }
-
-  Future<void> addWords(List<Word> words) async {
-    state = state.copyWith(isLoading: true, error: null);
-
-    try {
-      await dbService.insertWords(words);
-      await loadVocabulary();
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: 'Failed to add words: ${e.toString()}',
-      );
-    }
-  }
-
-  Future<void> deleteWord(int id) async {
-    try {
-      await dbService.deleteWord(id);
-      await loadVocabulary();
-    } catch (e) {
-      state = state.copyWith(
-        error: 'Failed to delete word: ${e.toString()}',
-      );
-    }
-  }
-
-  Future<void> updateWord(Word word) async {
-    try {
-      await dbService.updateWord(word);
-      await loadVocabulary();
-    } catch (e) {
-      state = state.copyWith(
-        error: 'Failed to update word: ${e.toString()}',
-      );
-    }
-  }
-
-  Future<void> searchVocabulary(String query) async {
-    if (query.isEmpty) {
-      await loadVocabulary();
-      return;
-    }
-
-    state = state.copyWith(isLoading: true, error: null);
-
-    try {
-      final words = await dbService.searchVocabulary(query);
-      state = state.copyWith(
-        words: words,
-        isLoading: false,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: 'Search failed: ${e.toString()}',
-      );
-    }
-  }
+  // ── Filter by JLPT level ───────────────────────────────────────────────────
 
   Future<void> filterByLevel(String? level) async {
-    state = state.copyWith(selectedLevel: level);
-    await loadVocabulary();
+    state = state.copyWith(
+      selectedLevel:      level,
+      clearSelectedLevel: level == null,
+    );
+    await load();
   }
 
-  void clearError() {
-    state = state.copyWith(error: null);
+  // ── Add a single word ──────────────────────────────────────────────────────
+
+  Future<VocabularyItem?> addWord({
+    required String word,
+    String? reading,
+    String? meaning,
+    String? jlptLevel,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final token = await _token();
+      if (token == null) throw Exception('Not authenticated');
+
+      final api  = _ref.read(apiServiceProvider);
+      final raw  = await api.addWord(
+        accessToken: token,
+        word:        word,
+        reading:     reading,
+        meaning:     meaning,
+        jlptLevel:   jlptLevel,
+      );
+      final item = VocabularyItem.fromJson(raw);
+      state = state.copyWith(
+        words:     [item, ...state.words],
+        isLoading: false,
+      );
+      return item;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to add word: $e',
+      );
+      return null;
+    }
   }
+
+  // ── Delete ─────────────────────────────────────────────────────────────────
+
+  Future<void> deleteWord(String id) async {
+    try {
+      final token = await _token();
+      if (token == null) return;
+      final api = _ref.read(apiServiceProvider);
+      await api.deleteWord(accessToken: token, id: id);
+      state = state.copyWith(
+        words: state.words.where((w) => w.id != id).toList(),
+      );
+    } catch (e) {
+      state = state.copyWith(error: 'Failed to delete word: $e');
+    }
+  }
+
+  // ── Seed JLPT level ────────────────────────────────────────────────────────
+
+  Future<void> seedLevel(String level) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final token = await _token();
+      if (token == null) throw Exception('Not authenticated');
+      final api = _ref.read(apiServiceProvider);
+      await api.seedJlptLevel(accessToken: token, level: level);
+      await load();
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to seed $level vocabulary: $e',
+      );
+    }
+  }
+
+  void clearError() => state = state.copyWith(clearError: true);
 }
 
-// Vocabulary stats provider
-final vocabularyStatsProvider = FutureProvider<VocabularyStats>((ref) async {
-  final dbService = ref.watch(databaseServiceProvider);
+// ── Providers ─────────────────────────────────────────────────────────────────
 
-  final total = await dbService.getVocabularyCount();
-  final n5 = await dbService.getVocabularyCountByLevel('N5');
-  final n4 = await dbService.getVocabularyCountByLevel('N4');
-  final n3 = await dbService.getVocabularyCountByLevel('N3');
-  final n2 = await dbService.getVocabularyCountByLevel('N2');
-  final n1 = await dbService.getVocabularyCountByLevel('N1');
+final vocabularyProvider =
+    StateNotifierProvider<VocabularyNotifier, VocabularyState>(
+  (ref) => VocabularyNotifier(ref),
+);
 
-  return VocabularyStats(
-    total: total,
-    n5: n5,
-    n4: n4,
-    n3: n3,
-    n2: n2,
-    n1: n1,
-  );
+final dueWordsCountProvider = Provider<int>((ref) {
+  return ref.watch(vocabularyProvider).dueWords.length;
 });
-
-class VocabularyStats {
-  final int total;
-  final int n5;
-  final int n4;
-  final int n3;
-  final int n2;
-  final int n1;
-
-  const VocabularyStats({
-    required this.total,
-    required this.n5,
-    required this.n4,
-    required this.n3,
-    required this.n2,
-    required this.n1,
-  });
-}

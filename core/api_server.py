@@ -98,6 +98,7 @@ class GenerateRequest(BaseModel):
     use_constraints: bool = True
     constraint_mode: str = "hard"
     num_sequences: int = 1
+    system_prompt: Optional[str] = None  # grammar theme / word focus hint
 
 class GenerateResponse(BaseModel):
     texts: List[str]
@@ -186,9 +187,14 @@ async def generate_text(request: GenerateRequest):
         if request.use_constraints and generator.constraint_mode != request.constraint_mode:
             generator.set_constraint_mode(request.constraint_mode)
 
+        # Prepend system_prompt to prime the model toward the desired context
+        effective_prompt = request.prompt
+        if request.system_prompt:
+            effective_prompt = f"{request.system_prompt}\n{request.prompt}"
+
         # Generate
         texts = generator.generate(
-            prompt=request.prompt,
+            prompt=effective_prompt,
             max_length=request.max_length,
             temperature=request.temperature,
             use_constraints=request.use_constraints,

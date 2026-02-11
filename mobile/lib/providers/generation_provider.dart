@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user_settings.dart';
 import '../models/generated_text.dart';
+import '../models/vocabulary_item.dart';
 import '../services/api_service.dart';
 import 'grammar_provider.dart';
 
@@ -34,6 +35,11 @@ final apiServiceProvider = Provider<ApiService>((ref) {
   final settings = ref.watch(settingsProvider);
   return ApiService(baseUrl: settings.apiBaseUrl);
 });
+
+// Focus word provider — set by VocabularyScreen before switching to LearnScreen.
+// The LearnScreen pre-fills the prompt and GenerationNotifier builds a
+// word-specific system prompt hint from it.
+final focusWordProvider = StateProvider<VocabularyItem?>((ref) => null);
 
 // Generation state
 class GenerationState {
@@ -77,6 +83,21 @@ class GenerationNotifier extends StateNotifier<GenerationState> {
   GenerationNotifier(this.apiService, this.settings, this._ref, this._grammarState)
       : super(const GenerationState());
 
+  /// Build the system_prompt string from active grammar theme and/or focus word.
+  String? _buildSystemPrompt() {
+    final focusWord    = _ref.read(focusWordProvider);
+    final grammarHint  = _grammarState.selected?.systemPromptHint;
+
+    if (focusWord != null) {
+      final reading = focusWord.reading != null ? '（${focusWord.reading}）' : '';
+      final meaning = focusWord.meaning != null ? ' — ${focusWord.meaning}' : '';
+      final wordHint =
+          'この文章に単語「${focusWord.word}」$reading$meaningを自然に使ってください。';
+      return grammarHint != null ? '$wordHint $grammarHint' : wordHint;
+    }
+    return grammarHint;
+  }
+
   Future<void> generateText({
     required String prompt,
     int maxLength = 50,
@@ -89,7 +110,8 @@ class GenerationNotifier extends StateNotifier<GenerationState> {
 
     state = state.copyWith(isLoading: true, error: null);
 
-    final selectedTheme = _grammarState.selected;
+    final selectedTheme  = _grammarState.selected;
+    final systemPrompt   = _buildSystemPrompt();
 
     try {
       final response = await apiService.generateText(
@@ -99,7 +121,7 @@ class GenerationNotifier extends StateNotifier<GenerationState> {
         useConstraints: settings.useConstraints,
         constraintMode: settings.constraintMode,
         numSequences:   1,
-        systemPrompt:   selectedTheme?.systemPromptHint,
+        systemPrompt:   systemPrompt,
       );
 
       final generated = GeneratedText(

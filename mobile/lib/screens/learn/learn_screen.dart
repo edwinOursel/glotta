@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/grammar_theme.dart';
 import '../../providers/generation_provider.dart';
 import '../../providers/grammar_provider.dart';
+import '../../providers/vocabulary_provider.dart';
 import '../grammar/grammar_selection_screen.dart';
 
 class LearnScreen extends ConsumerStatefulWidget {
@@ -23,9 +24,22 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
     super.dispose();
   }
 
+  // Called once per frame; detects an incoming focus word from VocabularyScreen
+  // and pre-fills the prompt with it.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final focusWord = ref.read(focusWordProvider);
+    if (focusWord != null && _promptController.text.isEmpty) {
+      _promptController.text = focusWord.word;
+    }
+  }
+
   void _handleGenerate() {
     final prompt = _promptController.text;
     ref.read(generationProvider.notifier).generateText(prompt: prompt);
+    // Clear focus word after first generation so it doesn't re-prime next time
+    ref.read(focusWordProvider.notifier).state = null;
   }
 
   @override
@@ -34,6 +48,7 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
     final settings        = ref.watch(settingsProvider);
     final grammarState    = ref.watch(grammarProvider);
     final selectedTheme   = grammarState.selected;
+    final focusWord       = ref.watch(focusWordProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -104,6 +119,16 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
           // Active grammar theme banner
           if (selectedTheme != null)
             _ActiveGrammarBanner(theme: selectedTheme),
+
+          // Focus word banner (set from VocabularyScreen)
+          if (focusWord != null)
+            _FocusWordBanner(
+              word:    focusWord.word,
+              reading: focusWord.reading,
+              meaning: focusWord.meaning,
+              onDismiss: () =>
+                  ref.read(focusWordProvider.notifier).state = null,
+            ),
 
           // History list
           Expanded(
@@ -275,6 +300,71 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
     } else {
       return '${timestamp.day}/${timestamp.month} ${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}';
     }
+  }
+}
+
+// ── Focus word banner ─────────────────────────────────────────────────────────
+
+class _FocusWordBanner extends StatelessWidget {
+  const _FocusWordBanner({
+    required this.word,
+    this.reading,
+    this.meaning,
+    required this.onDismiss,
+  });
+
+  final String       word;
+  final String?      reading;
+  final String?      meaning;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Material(
+      color: colors.tertiaryContainer.withOpacity(0.6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Icon(Icons.local_library_outlined,
+                size: 16, color: colors.onTertiaryContainer),
+            const SizedBox(width: 8),
+            Expanded(
+              child: RichText(
+                text: TextSpan(
+                  style: TextStyle(
+                      fontSize: 13, color: colors.onTertiaryContainer),
+                  children: [
+                    const TextSpan(text: 'Practising  '),
+                    TextSpan(
+                        text: word,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    if (reading != null)
+                      TextSpan(
+                          text: '（$reading）',
+                          style: const TextStyle(fontStyle: FontStyle.italic)),
+                    if (meaning != null)
+                      TextSpan(
+                          text: '  $meaning',
+                          style: TextStyle(
+                              color: colors.onTertiaryContainer
+                                  .withOpacity(0.7))),
+                  ],
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            GestureDetector(
+              onTap: onDismiss,
+              child: Icon(Icons.close,
+                  size: 16, color: colors.onTertiaryContainer),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

@@ -152,6 +152,21 @@ abstract class AppLocalizations {
   String get trophyFocusPractice10Name;
   String get trophyFocusPractice10Desc;
 
+  // ── Review (SRS flashcard session) ───────────────────────────────────────
+  String get reviewTitle;
+  String get reviewStart;
+  String get reviewNothingDue;
+  String get reviewNothingDueHint;
+  String reviewProgress(int current, int total);
+  String get reviewFlipHint;
+  String get reviewHard;
+  String get reviewOk;
+  String get reviewEasy;
+  String get reviewSessionDone;
+  String reviewSessionSummary(int reviewed, int correct);
+  String get reviewBackToVocab;
+  String get reviewAgain;
+
   // ── Settings ─────────────────────────────────────────────────────────────
   String get settingsTitle;
   String get settingsLanguage;
@@ -366,6 +381,21 @@ class _EnLocalizations extends AppLocalizations {
   @override String get settingsNavStyle    => 'Navigation labels';
   @override String get settingsNavKanji    => 'Kanji (漢字)';
   @override String get settingsNavHiragana => 'Hiragana (ひらがな)';
+
+  @override String get reviewTitle           => 'Review';
+  @override String get reviewStart           => 'Start review';
+  @override String get reviewNothingDue      => 'All caught up!';
+  @override String get reviewNothingDueHint  => 'No words due for review right now. Come back later!';
+  @override String reviewProgress(int current, int total) => '$current / $total';
+  @override String get reviewFlipHint        => 'Tap to reveal answer';
+  @override String get reviewHard            => 'Hard';
+  @override String get reviewOk             => 'OK';
+  @override String get reviewEasy            => 'Easy';
+  @override String get reviewSessionDone     => 'Session complete!';
+  @override String reviewSessionSummary(int reviewed, int correct) =>
+      '$correct / $reviewed correct';
+  @override String get reviewBackToVocab     => 'Back to vocabulary';
+  @override String get reviewAgain           => 'Review again';
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -529,4 +559,19 @@ class _FrLocalizations extends AppLocalizations {
   @override String get settingsNavStyle    => 'Labels de navigation';
   @override String get settingsNavKanji    => 'Kanji (漢字)';
   @override String get settingsNavHiragana => 'Hiragana (ひらがな)';
+
+  @override String get reviewTitle           => 'Révision';
+  @override String get reviewStart           => 'Commencer la révision';
+  @override String get reviewNothingDue      => 'Tout est à jour !';
+  @override String get reviewNothingDueHint  => 'Aucun mot à réviser pour l\'instant. Revenez plus tard !';
+  @override String reviewProgress(int current, int total) => '$current / $total';
+  @override String get reviewFlipHint        => 'Appuyez pour révéler la réponse';
+  @override String get reviewHard            => 'Difficile';
+  @override String get reviewOk             => 'OK';
+  @override String get reviewEasy            => 'Facile';
+  @override String get reviewSessionDone     => 'Session terminée !';
+  @override String reviewSessionSummary(int reviewed, int correct) =>
+      '$correct / $reviewed corrects';
+  @override String get reviewBackToVocab     => 'Retour au vocabulaire';
+  @override String get reviewAgain           => 'Réviser encore';
 }

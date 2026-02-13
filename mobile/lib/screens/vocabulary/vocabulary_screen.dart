@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/vocabulary_item.dart';
 import '../../providers/vocabulary_provider.dart';
+import '../review/review_screen.dart';
 
 // ── Level colours (match grammar theme palette) ───────────────────────────────
 
@@ -126,6 +127,10 @@ class _VocabularyScreenState extends ConsumerState<VocabularyScreen> {
             total: vocabState.words.length,
             due:   due,
           ),
+
+          // ── Review banner (shown when words are due) ─────────────────────
+          if (due > 0)
+            _ReviewBanner(dueCount: due),
 
           // ── Word list ───────────────────────────────────────────────────
           Expanded(
@@ -693,6 +698,52 @@ class _AddWordSheetState extends ConsumerState<_AddWordSheet> {
                   minimumSize: const Size.fromHeight(50)),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Review banner ─────────────────────────────────────────────────────────────
+
+class _ReviewBanner extends StatelessWidget {
+  final int dueCount;
+  const _ReviewBanner({required this.dueCount});
+
+  @override
+  Widget build(BuildContext context) {
+    final l           = AppLocalizations.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+      child: Material(
+        color:        colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => Navigator.of(context).push(ReviewScreen.route()),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Icon(Icons.flash_on_rounded,
+                    color: colorScheme.onPrimaryContainer),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '${l.vocabStatsDue}: $dueCount — ${l.reviewStart}',
+                    style: TextStyle(
+                      color:      colorScheme.onPrimaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Icon(Icons.arrow_forward_ios_rounded,
+                    size: 16, color: colorScheme.onPrimaryContainer),
+              ],
+            ),
+          ),
         ),
       ),
     );

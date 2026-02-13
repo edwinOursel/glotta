@@ -6,6 +6,7 @@ import '../../models/trophy.dart';
 import '../../providers/gamification_provider.dart';
 import '../../providers/grammar_provider.dart';
 import '../../providers/vocabulary_provider.dart';
+import '../review/review_screen.dart';
 
 // ── Localized trophy label resolver ──────────────────────────────────────────
 
@@ -130,6 +131,12 @@ class ProgressScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 20),
+
+          // ── Review button (when words are due) ────────────────────────
+          if (dueWords > 0) ...[
+            _ReviewCard(dueCount: dueWords),
+            const SizedBox(height: 20),
+          ],
 
           // ── Streak card ───────────────────────────────────────────────
           _StreakCard(streak: streak),
@@ -627,6 +634,69 @@ class _TrophyCard extends StatelessWidget {
       case TrophyTier.gold:     return 'Gold';
       case TrophyTier.platinum: return 'Platinum';
     }
+  }
+}
+
+// ── Review card ───────────────────────────────────────────────────────────────
+
+class _ReviewCard extends StatelessWidget {
+  final int dueCount;
+  const _ReviewCard({required this.dueCount});
+
+  @override
+  Widget build(BuildContext context) {
+    final l           = AppLocalizations.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
+    final theme       = Theme.of(context);
+
+    return Material(
+      color:        colorScheme.primaryContainer,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => Navigator.of(context).push(ReviewScreen.route()),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              Container(
+                width:  52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color:  colorScheme.primary.withOpacity(0.15),
+                  shape:  BoxShape.circle,
+                ),
+                child: Icon(Icons.flash_on_rounded,
+                    size: 28, color: colorScheme.primary),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l.reviewStart,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color:      colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    Text(
+                      '${l.progressStatsDue}: $dueCount',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onPrimaryContainer.withOpacity(0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios_rounded,
+                  size: 18, color: colorScheme.onPrimaryContainer),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

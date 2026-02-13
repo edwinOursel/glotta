@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -112,13 +114,28 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   int _selectedIndex = 0;
+  Timer? _friendsPoller;
 
   void _switchToLearn() => setState(() => _selectedIndex = 0);
+
+  void _startFriendsPolling() {
+    _friendsPoller = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) => ref.read(friendsProvider.notifier).load(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _friendsPoller?.cancel();
+    super.dispose();
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startFriendsPolling();
       // Switch to learn tab when a focus word is set from vocabulary
       ref.listenManual(focusWordProvider, (_, next) {
         if (next != null) {

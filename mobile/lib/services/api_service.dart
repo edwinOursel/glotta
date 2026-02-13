@@ -315,6 +315,185 @@ class ApiService {
   }
 
   // ==========================================================================
+  // Friends
+  // ==========================================================================
+
+  Future<List<Map<String, dynamic>>> getFriends({
+    required String accessToken,
+  }) async {
+    final response = await _client.get(
+      Uri.parse('$baseUrl/api/friends'),
+      headers: _headers(accessToken: accessToken),
+    );
+    _checkStatus(response, 'getFriends');
+    return List<Map<String, dynamic>>.from(jsonDecode(response.body) as List);
+  }
+
+  Future<List<Map<String, dynamic>>> getIncomingRequests({
+    required String accessToken,
+  }) async {
+    final response = await _client.get(
+      Uri.parse('$baseUrl/api/friends/requests'),
+      headers: _headers(accessToken: accessToken),
+    );
+    _checkStatus(response, 'getIncomingRequests');
+    return List<Map<String, dynamic>>.from(jsonDecode(response.body) as List);
+  }
+
+  Future<List<Map<String, dynamic>>> getSentRequests({
+    required String accessToken,
+  }) async {
+    final response = await _client.get(
+      Uri.parse('$baseUrl/api/friends/sent'),
+      headers: _headers(accessToken: accessToken),
+    );
+    _checkStatus(response, 'getSentRequests');
+    return List<Map<String, dynamic>>.from(jsonDecode(response.body) as List);
+  }
+
+  Future<Map<String, dynamic>> sendFriendRequest({
+    required String accessToken,
+    required String addresseeId,
+  }) async {
+    final response = await _client.post(
+      Uri.parse('$baseUrl/api/friends/request'),
+      headers: _headers(accessToken: accessToken),
+      body: jsonEncode({'addressee_id': addresseeId}),
+    );
+    _checkStatus(response, 'sendFriendRequest');
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> acceptFriendRequest({
+    required String accessToken,
+    required String friendshipId,
+  }) async {
+    final response = await _client.post(
+      Uri.parse('$baseUrl/api/friends/request/$friendshipId/accept'),
+      headers: _headers(accessToken: accessToken),
+    );
+    _checkStatus(response, 'acceptFriendRequest');
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> declineFriendRequest({
+    required String accessToken,
+    required String friendshipId,
+  }) async {
+    final response = await _client.post(
+      Uri.parse('$baseUrl/api/friends/request/$friendshipId/decline'),
+      headers: _headers(accessToken: accessToken),
+    );
+    _checkStatus(response, 'declineFriendRequest');
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<void> unfriend({
+    required String accessToken,
+    required String userId,
+  }) async {
+    final response = await _client.delete(
+      Uri.parse('$baseUrl/api/friends/$userId'),
+      headers: _headers(accessToken: accessToken),
+    );
+    _checkStatus(response, 'unfriend');
+  }
+
+  Future<List<Map<String, dynamic>>> searchUsers({
+    required String accessToken,
+    required String query,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/friends/search')
+        .replace(queryParameters: {'q': query});
+    final response = await _client.get(
+      uri,
+      headers: _headers(accessToken: accessToken),
+    );
+    _checkStatus(response, 'searchUsers');
+    return List<Map<String, dynamic>>.from(jsonDecode(response.body) as List);
+  }
+
+  Future<List<Map<String, dynamic>>> getLeaderboard({
+    required String accessToken,
+  }) async {
+    final response = await _client.get(
+      Uri.parse('$baseUrl/api/friends/leaderboard'),
+      headers: _headers(accessToken: accessToken),
+    );
+    _checkStatus(response, 'getLeaderboard');
+    return List<Map<String, dynamic>>.from(jsonDecode(response.body) as List);
+  }
+
+  // ==========================================================================
+  // Challenges
+  // ==========================================================================
+
+  Future<List<Map<String, dynamic>>> getChallenges({
+    required String accessToken,
+  }) async {
+    final response = await _client.get(
+      Uri.parse('$baseUrl/api/challenges'),
+      headers: _headers(accessToken: accessToken),
+    );
+    _checkStatus(response, 'getChallenges');
+    return List<Map<String, dynamic>>.from(jsonDecode(response.body) as List);
+  }
+
+  Future<List<Map<String, dynamic>>> getChallengeHistory({
+    required String accessToken,
+  }) async {
+    final response = await _client.get(
+      Uri.parse('$baseUrl/api/challenges/history'),
+      headers: _headers(accessToken: accessToken),
+    );
+    _checkStatus(response, 'getChallengeHistory');
+    return List<Map<String, dynamic>>.from(jsonDecode(response.body) as List);
+  }
+
+  Future<Map<String, dynamic>> createChallenge({
+    required String accessToken,
+    required String recipientId,
+    required String type,
+    int durationDays = 7,
+  }) async {
+    final response = await _client.post(
+      Uri.parse('$baseUrl/api/challenges'),
+      headers: _headers(accessToken: accessToken),
+      body: jsonEncode({
+        'recipient_id': recipientId,
+        'type': type,
+        'duration_days': durationDays,
+      }),
+    );
+    _checkStatus(response, 'createChallenge');
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> acceptChallenge({
+    required String accessToken,
+    required String challengeId,
+  }) async {
+    final response = await _client.post(
+      Uri.parse('$baseUrl/api/challenges/$challengeId/accept'),
+      headers: _headers(accessToken: accessToken),
+    );
+    _checkStatus(response, 'acceptChallenge');
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> declineChallenge({
+    required String accessToken,
+    required String challengeId,
+  }) async {
+    final response = await _client.post(
+      Uri.parse('$baseUrl/api/challenges/$challengeId/decline'),
+      headers: _headers(accessToken: accessToken),
+    );
+    _checkStatus(response, 'declineChallenge');
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  // ==========================================================================
   // Health
   // ==========================================================================
 

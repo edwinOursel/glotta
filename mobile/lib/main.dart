@@ -10,7 +10,9 @@ import 'providers/generation_provider.dart' show generationProvider;
 import 'providers/locale_provider.dart'; // also exports navStyleProvider
 import 'providers/vocabulary_provider.dart'
     show focusWordProvider, vocabularyProvider;
+import 'providers/friends_provider.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/friends/friends_screen.dart';
 import 'screens/learn/learn_screen.dart';
 import 'screens/progress/progress_screen.dart';
 import 'screens/vocabulary/vocabulary_screen.dart';
@@ -178,12 +180,18 @@ class _HomePageState extends ConsumerState<HomePage> {
     final navLearn    = useKanji ? l.navLearn      : 'がくしゅう';
     final navVocab    = useKanji ? l.navVocabulary  : 'たんご';
     final navProgress = useKanji ? l.navProgress    : 'しんちょく';
+    final navFriends  = useKanji ? l.navFriends     : 'ともだち';
     final navSettings = useKanji ? l.navSettings    : 'せってい';
+
+    // Badge count for friend requests
+    final pendingRequests = ref.watch(
+        friendsProvider.select((s) => s.pendingIncoming));
 
     final pages = <Widget>[
       const LearnScreen(),
       VocabularyScreen(onPractiseWord: _switchToLearn),
       const ProgressScreen(),
+      const FriendsScreen(),
       const SettingsPage(),
     ];
 
@@ -208,6 +216,19 @@ class _HomePageState extends ConsumerState<HomePage> {
             icon:         const Icon(Icons.insights_outlined),
             selectedIcon: const Icon(Icons.insights),
             label:        navProgress,
+          ),
+          NavigationDestination(
+            icon: Badge(
+              isLabelVisible: pendingRequests > 0,
+              label: Text('$pendingRequests'),
+              child: const Icon(Icons.people_outline),
+            ),
+            selectedIcon: Badge(
+              isLabelVisible: pendingRequests > 0,
+              label: Text('$pendingRequests'),
+              child: const Icon(Icons.people),
+            ),
+            label: navFriends,
           ),
           NavigationDestination(
             icon:         const Icon(Icons.settings_outlined),

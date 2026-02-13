@@ -188,6 +188,62 @@ abstract class AppLocalizations {
   String get settingsNavKanji;
   String get settingsNavHiragana;
 
+  // ── Navigation (5th tab) ──────────────────────────────────────────────────
+  String get navFriends;
+
+  // ── Friends & Social ─────────────────────────────────────────────────────
+  String get friendsTitle;
+  String get friendsFriends;
+  String get friendsRequests;
+  String get friendsSent;
+  String get friendsLeaderboard;
+  String get friendsNoFriends;
+  String get friendsNoFriendsHint;
+  String get friendsNoPending;
+  String get friendsAddFriend;
+  String get friendsSearchHint;
+  String get friendsSearchNoResults;
+  String get friendsRequestSent;
+  String get friendsRequestPending;
+  String get friendsAlreadyFriends;
+  String get friendsAccept;
+  String get friendsDecline;
+  String get friendsRemove;
+  String get friendsRemoveTitle;
+  String friendsRemoveContent(String name);
+  String get friendsVocabSize;
+  String get friendsMastered;
+  String get friendsStreak;
+
+  // ── Challenges ───────────────────────────────────────────────────────────
+  String get challengesTitle;
+  String get challengesActive;
+  String get challengesHistory;
+  String get challengesNone;
+  String get challengesNoneHint;
+  String get challengesSend;
+  String get challengesAccept;
+  String get challengesDecline;
+  String get challengesTypeVocabSprint;
+  String get challengesTypeMasteryRace;
+  String get challengesTypeAccuracyDuel;
+  String get challengesTypeVocabSprintDesc;
+  String get challengesTypeMasteryRaceDesc;
+  String get challengesTypeAccuracyDuelDesc;
+  String get challengesDuration;
+  String challengesDurationDays(int n);
+  String get challengesVs;
+  String get challengesYou;
+  String get challengesWinner;
+  String get challengesTie;
+  String get challengesStatusPending;
+  String get challengesStatusActive;
+  String get challengesStatusCompleted;
+  String get challengesStatusDeclined;
+  String get challengesEndsIn;
+  String challengesEndsInDays(int n);
+  String challengesScore(double score, String type);
+
   // ── Lookup ───────────────────────────────────────────────────────────────
 
   static AppLocalizations of(BuildContext context) =>
@@ -382,6 +438,65 @@ class _EnLocalizations extends AppLocalizations {
   @override String get settingsNavKanji    => 'Kanji (漢字)';
   @override String get settingsNavHiragana => 'Hiragana (ひらがな)';
 
+  @override String get navFriends          => '友達';
+
+  @override String get friendsTitle              => '友達 - Friends';
+  @override String get friendsFriends            => 'Friends';
+  @override String get friendsRequests           => 'Requests';
+  @override String get friendsSent               => 'Sent';
+  @override String get friendsLeaderboard        => 'Leaderboard';
+  @override String get friendsNoFriends          => 'No friends yet';
+  @override String get friendsNoFriendsHint      => 'Search for users to add friends and compete together!';
+  @override String get friendsNoPending          => 'No pending requests';
+  @override String get friendsAddFriend          => 'Add friend';
+  @override String get friendsSearchHint         => 'Search by username or email…';
+  @override String get friendsSearchNoResults    => 'No users found';
+  @override String get friendsRequestSent        => 'Request sent!';
+  @override String get friendsRequestPending     => 'Request pending';
+  @override String get friendsAlreadyFriends     => 'Already friends';
+  @override String get friendsAccept             => 'Accept';
+  @override String get friendsDecline            => 'Decline';
+  @override String get friendsRemove             => 'Remove friend';
+  @override String get friendsRemoveTitle        => 'Remove friend?';
+  @override String friendsRemoveContent(String name) => 'Remove $name from your friends list?';
+  @override String get friendsVocabSize          => 'Words';
+  @override String get friendsMastered           => 'Mastered';
+  @override String get friendsStreak             => 'Streak';
+
+  @override String get challengesTitle           => 'Challenges';
+  @override String get challengesActive          => 'Active';
+  @override String get challengesHistory         => 'History';
+  @override String get challengesNone            => 'No active challenges';
+  @override String get challengesNoneHint        => 'Challenge a friend to stay motivated!';
+  @override String get challengesSend            => 'Send challenge';
+  @override String get challengesAccept          => 'Accept';
+  @override String get challengesDecline         => 'Decline';
+  @override String get challengesTypeVocabSprint => 'Vocab Sprint';
+  @override String get challengesTypeMasteryRace => 'Mastery Race';
+  @override String get challengesTypeAccuracyDuel => 'Accuracy Duel';
+  @override String get challengesTypeVocabSprintDesc =>
+      'Who adds the most words during the challenge period?';
+  @override String get challengesTypeMasteryRaceDesc =>
+      'Who reaches the most mastered words (level 4+)?';
+  @override String get challengesTypeAccuracyDuelDesc =>
+      'Who has the highest review accuracy?';
+  @override String get challengesDuration        => 'Duration';
+  @override String challengesDurationDays(int n) => '$n days';
+  @override String get challengesVs              => 'vs';
+  @override String get challengesYou             => 'You';
+  @override String get challengesWinner          => 'Winner';
+  @override String get challengesTie             => 'Tie!';
+  @override String get challengesStatusPending   => 'Waiting…';
+  @override String get challengesStatusActive    => 'Active';
+  @override String get challengesStatusCompleted => 'Finished';
+  @override String get challengesStatusDeclined  => 'Declined';
+  @override String get challengesEndsIn          => 'Ends in';
+  @override String challengesEndsInDays(int n)   => '$n days left';
+  @override String challengesScore(double score, String type) {
+    if (type == 'accuracy_duel') return '${score.toStringAsFixed(1)}%';
+    return score.toInt().toString();
+  }
+
   @override String get reviewTitle           => 'Review';
   @override String get reviewStart           => 'Start review';
   @override String get reviewNothingDue      => 'All caught up!';
@@ -559,6 +674,65 @@ class _FrLocalizations extends AppLocalizations {
   @override String get settingsNavStyle    => 'Labels de navigation';
   @override String get settingsNavKanji    => 'Kanji (漢字)';
   @override String get settingsNavHiragana => 'Hiragana (ひらがな)';
+
+  @override String get navFriends          => '友達';
+
+  @override String get friendsTitle              => '友達 - Amis';
+  @override String get friendsFriends            => 'Amis';
+  @override String get friendsRequests           => 'Demandes';
+  @override String get friendsSent               => 'Envoyées';
+  @override String get friendsLeaderboard        => 'Classement';
+  @override String get friendsNoFriends          => 'Pas encore d\'amis';
+  @override String get friendsNoFriendsHint      => 'Cherchez des utilisateurs pour ajouter des amis et vous mesurer à eux !';
+  @override String get friendsNoPending          => 'Aucune demande en attente';
+  @override String get friendsAddFriend          => 'Ajouter un ami';
+  @override String get friendsSearchHint         => 'Chercher par nom d\'utilisateur ou e-mail…';
+  @override String get friendsSearchNoResults    => 'Aucun utilisateur trouvé';
+  @override String get friendsRequestSent        => 'Demande envoyée !';
+  @override String get friendsRequestPending     => 'Demande en attente';
+  @override String get friendsAlreadyFriends     => 'Déjà amis';
+  @override String get friendsAccept             => 'Accepter';
+  @override String get friendsDecline            => 'Refuser';
+  @override String get friendsRemove             => 'Supprimer l\'ami';
+  @override String get friendsRemoveTitle        => 'Supprimer l\'ami ?';
+  @override String friendsRemoveContent(String name) => 'Retirer $name de votre liste d\'amis ?';
+  @override String get friendsVocabSize          => 'Mots';
+  @override String get friendsMastered           => 'Maîtrisés';
+  @override String get friendsStreak             => 'Série';
+
+  @override String get challengesTitle           => 'Défis';
+  @override String get challengesActive          => 'Actifs';
+  @override String get challengesHistory         => 'Historique';
+  @override String get challengesNone            => 'Aucun défi actif';
+  @override String get challengesNoneHint        => 'Défiez un ami pour rester motivé !';
+  @override String get challengesSend            => 'Envoyer un défi';
+  @override String get challengesAccept          => 'Accepter';
+  @override String get challengesDecline         => 'Refuser';
+  @override String get challengesTypeVocabSprint => 'Sprint de vocab';
+  @override String get challengesTypeMasteryRace => 'Course à la maîtrise';
+  @override String get challengesTypeAccuracyDuel => 'Duel de précision';
+  @override String get challengesTypeVocabSprintDesc =>
+      'Qui ajoute le plus de mots pendant la période du défi ?';
+  @override String get challengesTypeMasteryRaceDesc =>
+      'Qui atteint le plus de mots maîtrisés (niveau 4+) ?';
+  @override String get challengesTypeAccuracyDuelDesc =>
+      'Qui a la meilleure précision de révision ?';
+  @override String get challengesDuration        => 'Durée';
+  @override String challengesDurationDays(int n) => '$n jours';
+  @override String get challengesVs              => 'contre';
+  @override String get challengesYou             => 'Vous';
+  @override String get challengesWinner          => 'Gagnant';
+  @override String get challengesTie             => 'Égalité !';
+  @override String get challengesStatusPending   => 'En attente…';
+  @override String get challengesStatusActive    => 'Actif';
+  @override String get challengesStatusCompleted => 'Terminé';
+  @override String get challengesStatusDeclined  => 'Refusé';
+  @override String get challengesEndsIn          => 'Se termine dans';
+  @override String challengesEndsInDays(int n)   => '$n jours restants';
+  @override String challengesScore(double score, String type) {
+    if (type == 'accuracy_duel') return '${score.toStringAsFixed(1)} %';
+    return score.toInt().toString();
+  }
 
   @override String get reviewTitle           => 'Révision';
   @override String get reviewStart           => 'Commencer la révision';

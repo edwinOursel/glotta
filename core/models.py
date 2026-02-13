@@ -36,6 +36,8 @@ class User(Base):
     vocabulary       = relationship("VocabularyItem",  back_populates="user", cascade="all, delete-orphan")
     sessions         = relationship("LearningSession", back_populates="user", cascade="all, delete-orphan")
     generated_texts  = relationship("GeneratedText",   back_populates="user", cascade="all, delete-orphan")
+    sent_requests    = relationship("Friendship", foreign_keys="Friendship.requester_id", cascade="all, delete-orphan")
+    received_requests = relationship("Friendship", foreign_keys="Friendship.addressee_id", cascade="all, delete-orphan")
 
 
 class VocabularyItem(Base):
@@ -105,3 +107,55 @@ class GeneratedText(Base):
     created_at     = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="generated_texts")
+
+
+class Friendship(Base):
+    """
+    Bidirectional friend relationship.
+    requester sends the request; addressee accepts/declines.
+    status: 'pending' | 'accepted' | 'declined'
+    """
+    __tablename__ = "friendships"
+    __table_args__ = (
+        UniqueConstraint("requester_id", "addressee_id", name="uq_friendship"),
+    )
+
+    id           = Column(String, primary_key=True, default=_uuid)
+    requester_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    addressee_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    status       = Column(String, default="pending")   # pending | accepted | declined
+    created_at   = Column(DateTime, default=datetime.utcnow)
+    updated_at   = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    requester = relationship("User", foreign_keys=[requester_id])
+    addressee = relationship("User", foreign_keys=[addressee_id])
+
+
+class Challenge(Base):
+    """
+    Peer-to-peer learning challenge.
+    type: 'vocab_sprint' | 'mastery_race' | 'accuracy_duel'
+    status: 'pending' | 'active' | 'completed' | 'declined' | 'expired'
+
+    Score semantics:
+      vocab_sprint  — words added between starts_at and ends_at
+      mastery_race  — words with mastery_level >= 4 at ends_at
+      accuracy_duel — avg accuracy (times_correct / times_seen) on reviewed words at ends_at
+    """
+    __tablename__ = "challenges"
+
+    id               = Column(String, primary_key=True, default=_uuid)
+    sender_id        = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    recipient_id     = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    type             = Column(String, nullable=False)   # vocab_sprint | mastery_race | accuracy_duel
+    status           = Column(String, default="pending")
+    duration_days    = Column(Integer, default=7)
+    starts_at        = Column(DateTime, nullable=True)  # set when accepted
+    ends_at          = Column(DateTime, nullable=True)  # starts_at + duration_days
+    sender_score     = Column(Float, nullable=True)
+    recipient_score  = Column(Float, nullable=True)
+    winner_id        = Column(String, nullable=True)    # user_id or None for tie
+    created_at       = Column(DateTime, default=datetime.utcnow)
+
+    sender    = relationship("User", foreign_keys=[sender_id])
+    recipient = relationship("User", foreign_keys=[recipient_id])

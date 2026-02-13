@@ -187,3 +187,76 @@ class ProgressResponse(BaseModel):
     vocabulary_size: int
     words_mastered: int          # mastery_level == 5
     current_streak_days: int
+
+
+# ── Friends ────────────────────────────────────────────────────────────────────
+
+class FriendRequestBody(BaseModel):
+    """Send a friend request to a user by their ID."""
+    addressee_id: str
+
+
+class PublicUserProfile(BaseModel):
+    """Public-facing subset of a user's profile."""
+    id: str
+    username: Optional[str]
+    jlpt_level: str
+    # public stats
+    vocabulary_size: int
+    words_mastered: int
+    current_streak_days: int
+
+
+class FriendshipResponse(BaseModel):
+    id: str
+    status: str                    # pending | accepted | declined
+    created_at: datetime
+    updated_at: datetime
+    # the other party
+    other_user: PublicUserProfile
+
+
+class FriendsLeaderboardEntry(BaseModel):
+    rank: int
+    user: PublicUserProfile
+    is_self: bool
+
+
+# ── Challenges ────────────────────────────────────────────────────────────────
+
+CHALLENGE_TYPES = {"vocab_sprint", "mastery_race", "accuracy_duel"}
+
+
+class ChallengeCreateRequest(BaseModel):
+    recipient_id: str
+    type: str           # vocab_sprint | mastery_race | accuracy_duel
+    duration_days: int = 7
+
+    @field_validator("type")
+    @classmethod
+    def validate_type(cls, v: str) -> str:
+        if v not in CHALLENGE_TYPES:
+            raise ValueError(f"type must be one of: {', '.join(CHALLENGE_TYPES)}")
+        return v
+
+    @field_validator("duration_days")
+    @classmethod
+    def validate_duration(cls, v: int) -> int:
+        if not 1 <= v <= 30:
+            raise ValueError("duration_days must be 1-30")
+        return v
+
+
+class ChallengeResponse(BaseModel):
+    id: str
+    type: str
+    status: str
+    duration_days: int
+    starts_at: Optional[datetime]
+    ends_at: Optional[datetime]
+    created_at: datetime
+    sender: PublicUserProfile
+    recipient: PublicUserProfile
+    sender_score: Optional[float]
+    recipient_score: Optional[float]
+    winner_id: Optional[str]

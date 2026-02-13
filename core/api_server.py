@@ -23,7 +23,7 @@ from user_vocabulary import UserVocabulary
 from agentic_graph import AgenticGlotta
 from auth import get_current_user
 from models import User
-from routers import auth, users, vocabulary, sessions
+from routers import auth, users, vocabulary, sessions, friends, challenges
 
 # ============================================================================
 # Lifespan — DB init on startup
@@ -50,6 +50,8 @@ app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(vocabulary.router)
 app.include_router(sessions.router)
+app.include_router(friends.router)
+app.include_router(challenges.router)
 
 # CORS middleware for mobile app
 app.add_middleware(

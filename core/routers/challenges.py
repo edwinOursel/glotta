@@ -26,7 +26,7 @@ from auth import get_current_user
 from database import get_db
 from models import User, VocabularyItem, Challenge, Friendship
 from schemas import ChallengeCreateRequest, ChallengeResponse, PublicUserProfile
-from routers.friends import _public_profile, _friendship_between
+from routers.friends import _public_profile, _friendship_between, _batch_profiles
 
 router = APIRouter(prefix="/api/challenges", tags=["challenges"])
 
@@ -112,14 +112,13 @@ async def _to_response(
     current_user_id: str,
     db: AsyncSession,
 ) -> ChallengeResponse:
+    """Single-challenge response (for mutation / detail endpoints where N=1)."""
     challenge = await _finalize_if_expired(challenge, db)
 
     sender_user    = await db.get(User, challenge.sender_id)
     recipient_user = await db.get(User, challenge.recipient_id)
-    sender_profile    = await _public_profile(sender_user, db)
-    recipient_profile = await _public_profile(recipient_user, db)
+    profiles = await _batch_profiles([sender_user, recipient_user], db)
 
-    # Live scores for active challenges
     sender_score    = challenge.sender_score
     recipient_score = challenge.recipient_score
     if challenge.status == "active":
@@ -140,12 +139,60 @@ async def _to_response(
         starts_at=challenge.starts_at,
         ends_at=challenge.ends_at,
         created_at=challenge.created_at,
-        sender=sender_profile,
-        recipient=recipient_profile,
+        sender=profiles[challenge.sender_id],
+        recipient=profiles[challenge.recipient_id],
         sender_score=sender_score,
         recipient_score=recipient_score,
         winner_id=challenge.winner_id,
     )
+
+
+async def _list_to_responses(
+    challenges: list[Challenge],
+    current_user_id: str,
+    db: AsyncSession,
+) -> list[ChallengeResponse]:
+    """
+    Convert a list of challenges with batched profile loading.
+    Reduces profile queries from N×4 to 2 regardless of list length.
+    """
+    if not challenges:
+        return []
+
+    # Auto-finalize expired challenges
+    finalized = [await _finalize_if_expired(c, db) for c in challenges]
+
+    # Batch-load all distinct users in one query
+    user_ids = {c.sender_id for c in finalized} | {c.recipient_id for c in finalized}
+    users_result = await db.execute(select(User).where(User.id.in_(user_ids)))
+    profiles = await _batch_profiles(list(users_result.scalars().all()), db)
+
+    responses = []
+    for c in finalized:
+        sender_score    = c.sender_score
+        recipient_score = c.recipient_score
+        if c.status == "active":
+            sender_score    = await _compute_score(
+                c.sender_id, c.type, c.starts_at, c.ends_at, db
+            )
+            recipient_score = await _compute_score(
+                c.recipient_id, c.type, c.starts_at, c.ends_at, db
+            )
+        responses.append(ChallengeResponse(
+            id=c.id,
+            type=c.type,
+            status=c.status,
+            duration_days=c.duration_days,
+            starts_at=c.starts_at,
+            ends_at=c.ends_at,
+            created_at=c.created_at,
+            sender=profiles[c.sender_id],
+            recipient=profiles[c.recipient_id],
+            sender_score=sender_score,
+            recipient_score=recipient_score,
+            winner_id=c.winner_id,
+        ))
+    return responses
 
 
 # ── Routes ─────────────────────────────────────────────────────────────────────
@@ -164,7 +211,7 @@ async def list_active_challenges(
         ).order_by(Challenge.created_at.desc())
     )
     challenges = result.scalars().all()
-    return [await _to_response(c, current_user.id, db) for c in challenges]
+    return await _list_to_responses(challenges, current_user.id, db)
 
 
 @router.get("/history", response_model=list[ChallengeResponse])
@@ -181,7 +228,7 @@ async def list_past_challenges(
         ).order_by(Challenge.created_at.desc()).limit(50)
     )
     challenges = result.scalars().all()
-    return [await _to_response(c, current_user.id, db) for c in challenges]
+    return await _list_to_responses(challenges, current_user.id, db)
 
 
 @router.get("/{challenge_id}", response_model=ChallengeResponse)

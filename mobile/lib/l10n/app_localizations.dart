@@ -89,7 +89,6 @@ abstract class AppLocalizations {
 
   // ── Progress / Stats ─────────────────────────────────────────────────────
   String get progressTitle;
-  String get progressPlaceholder;
   String get progressStatsWords;
   String get progressStatsDue;
   String get progressStatsSessions;
@@ -362,7 +361,6 @@ class _EnLocalizations extends AppLocalizations {
   @override String get grammarMastery       => 'Mastery';
 
   @override String get progressTitle            => '進捗 - Progress';
-  @override String get progressPlaceholder      => 'Progress tracking coming soon…';
   @override String get progressStatsWords       => 'Words';
   @override String get progressStatsDue         => 'Due today';
   @override String get progressStatsSessions    => 'Sessions';
@@ -599,7 +597,6 @@ class _FrLocalizations extends AppLocalizations {
   @override String get grammarMastery       => 'Maîtrise';
 
   @override String get progressTitle            => '進捗 - Progrès';
-  @override String get progressPlaceholder      => 'Le suivi des progrès arrive bientôt…';
   @override String get progressStatsWords       => 'Mots';
   @override String get progressStatsDue         => 'À revoir';
   @override String get progressStatsSessions    => 'Sessions';

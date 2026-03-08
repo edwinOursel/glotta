@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy import (
     Column, String, Integer, Float, DateTime, Text,
-    ForeignKey, UniqueConstraint,
+    ForeignKey, UniqueConstraint, CheckConstraint,
 )
 from sqlalchemy.orm import relationship
 
@@ -143,6 +143,9 @@ class Challenge(Base):
       accuracy_duel — avg accuracy (times_correct / times_seen) on reviewed words at ends_at
     """
     __tablename__ = "challenges"
+    __table_args__ = (
+        CheckConstraint("duration_days >= 1 AND duration_days <= 30", name="ck_challenge_duration"),
+    )
 
     id               = Column(String, primary_key=True, default=_uuid)
     sender_id        = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)

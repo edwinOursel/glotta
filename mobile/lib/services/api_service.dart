@@ -15,7 +15,10 @@ class ApiService {
   final http.Client _client;
 
   ApiService({
-    this.baseUrl = 'http://localhost:8000',
+    this.baseUrl = const String.fromEnvironment(
+      'API_BASE_URL',
+      defaultValue: 'http://10.0.2.2:8000', // Android emulator → host; override with --dart-define
+    ),
     http.Client? client,
   }) : _client = client ?? http.Client();
 

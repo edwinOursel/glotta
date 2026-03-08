@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/vocabulary_item.dart';
@@ -103,8 +104,8 @@ class ReviewNotifier extends StateNotifier<ReviewSessionState> {
           sessionType: 'review',
         );
         sessionId = session['id'] as String?;
-      } catch (_) {
-        // Non-critical — session tracking is best-effort
+      } catch (e) {
+        debugPrint('[ReviewNotifier] Failed to open backend session: $e');
       }
 
       state = state.copyWith(
@@ -149,8 +150,8 @@ class ReviewNotifier extends StateNotifier<ReviewSessionState> {
         wordId:      word.id,
         quality:     quality,
       );
-    } catch (_) {
-      // Non-critical
+    } catch (e) {
+      debugPrint('[ReviewNotifier] Failed to submit SM-2 rating: $e');
     }
 
     // When the last card is rated: close session + refresh downstream state
@@ -177,19 +178,25 @@ class ReviewNotifier extends StateNotifier<ReviewSessionState> {
           wordsCorrect:   correct,
         );
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ReviewNotifier] Failed to end backend session: $e');
+    }
 
     // 2. Refresh vocabulary so mastery levels + due counts are up-to-date
     try {
       await _ref.read(vocabularyProvider.notifier).load();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ReviewNotifier] Failed to refresh vocabulary: $e');
+    }
 
     // 3. Record activity for streak + re-evaluate trophies
     if (reviewed > 0) {
       try {
         _ref.read(streakProvider.notifier).recordActivity();
         await _ref.read(trophyProvider.notifier).evaluate();
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('[ReviewNotifier] Failed to update streak/trophies: $e');
+      }
     }
   }
 

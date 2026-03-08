@@ -10,6 +10,7 @@ Provides REST API endpoints for the mobile app to:
 - Constrained LLM text generation (simple + agentic)
 """
 
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -53,10 +54,17 @@ app.include_router(sessions.router)
 app.include_router(friends.router)
 app.include_router(challenges.router)
 
-# CORS middleware for mobile app
+# CORS middleware — set CORS_ORIGINS env var as a comma-separated list.
+# Defaults to localhost only. Mobile native clients bypass CORS entirely,
+# so this mainly matters if a web client is ever added.
+_cors_origins = [
+    o.strip()
+    for o in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:8080").split(",")
+    if o.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO: Restrict in production
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

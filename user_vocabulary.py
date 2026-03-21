@@ -31,6 +31,9 @@ class UserVocabulary:
         self.known_expressions: Set[str] = set()
         self.vocab_file = vocab_file
 
+        # Cache pour get_allowed_token_ids() — invalidé à chaque modification du vocabulaire
+        self._token_ids_cache: Optional[Set[int]] = None
+
         # Ajouter les éléments de base
         self._add_basic_elements()
 
@@ -44,23 +47,27 @@ class UserVocabulary:
             self.known_words.add(particle)
         for punct in self.BASIC_PUNCTUATION:
             self.known_words.add(punct)
+        self._token_ids_cache = None
 
     def add_word(self, word: str):
         """Ajoute un mot au vocabulaire connu."""
         self.known_words.add(word)
+        self._token_ids_cache = None
 
     def add_words(self, words: List[str]):
         """Ajoute plusieurs mots au vocabulaire connu."""
-        for word in words:
-            self.add_word(word)
+        self.known_words.update(words)
+        self._token_ids_cache = None
 
     def add_expression(self, expression: str):
         """Ajoute une expression (plusieurs mots) au vocabulaire connu."""
         self.known_expressions.add(expression)
+        self._token_ids_cache = None
 
     def remove_word(self, word: str):
         """Retire un mot du vocabulaire connu."""
         self.known_words.discard(word)
+        self._token_ids_cache = None
 
     def add_jlpt_level(self, level: str):
         """
@@ -80,10 +87,16 @@ class UserVocabulary:
         """
         Convertit le vocabulaire connu en IDs de tokens utilisables par le modèle.
 
+        Le résultat est mis en cache et n'est recalculé qu'après une modification
+        du vocabulaire (add_word, remove_word, load_from_file, etc.).
+
         Returns:
             Set des IDs de tokens autorisés
         """
-        allowed_ids = set()
+        if self._token_ids_cache is not None:
+            return self._token_ids_cache
+
+        allowed_ids: Set[int] = set()
 
         # Tokeniser chaque mot connu et récupérer ses token IDs
         for word in self.known_words:
@@ -96,9 +109,9 @@ class UserVocabulary:
             allowed_ids.update(token_ids)
 
         # Toujours autoriser les tokens spéciaux (BOS, EOS, PAD, etc.)
-        special_token_ids = set(self.tokenizer.all_special_ids)
-        allowed_ids.update(special_token_ids)
+        allowed_ids.update(self.tokenizer.all_special_ids)
 
+        self._token_ids_cache = allowed_ids
         return allowed_ids
 
     def save_to_file(self, filepath: Optional[str] = None):
@@ -138,6 +151,7 @@ class UserVocabulary:
 
         self.known_words.update(data.get("words", []))
         self.known_expressions.update(data.get("expressions", []))
+        self._token_ids_cache = None
 
         print(f"✓ Loaded {len(self.known_words)} words and {len(self.known_expressions)} expressions")
 

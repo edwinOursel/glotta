@@ -35,6 +35,25 @@ class VocabularyConstraintLogitsProcessor(LogitsProcessor):
         self.mode = mode
         self.penalty_weight = penalty_weight
         self.min_allowed_tokens = min_allowed_tokens
+        # Lazy-initialized boolean mask tensor; rebuilt if vocab_size changes
+        self._forbidden_mask: Optional[torch.BoolTensor] = None
+        self._cached_vocab_size: int = -1
+
+    def _get_forbidden_mask(self, vocab_size: int, device: torch.device) -> torch.BoolTensor:
+        """
+        Retourne un masque booléen 1-D [vocab_size] : True = token interdit.
+
+        Le masque est construit une seule fois et réutilisé pour toute la génération,
+        ce qui évite des milliers d'itérations Python par step.
+        """
+        if self._forbidden_mask is None or self._cached_vocab_size != vocab_size:
+            allowed_list = [t for t in self.allowed_token_ids if t < vocab_size]
+            allowed_tensor = torch.zeros(vocab_size, dtype=torch.bool, device=device)
+            if allowed_list:
+                allowed_tensor[torch.tensor(allowed_list, dtype=torch.long, device=device)] = True
+            self._forbidden_mask = ~allowed_tensor
+            self._cached_vocab_size = vocab_size
+        return self._forbidden_mask.to(device)
 
     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.FloatTensor:
         """
@@ -58,66 +77,44 @@ class VocabularyConstraintLogitsProcessor(LogitsProcessor):
 
     def _apply_hard_constraint(self, scores: torch.FloatTensor) -> torch.FloatTensor:
         """Bloque complètement les tokens non autorisés."""
-        mask = torch.full_like(scores, 0.0)
-
-        # Créer un masque de tous les tokens NON autorisés
-        all_token_ids = set(range(scores.shape[-1]))
-        forbidden_token_ids = all_token_ids - self.allowed_token_ids
-
-        # Appliquer -inf aux tokens interdits
-        for token_id in forbidden_token_ids:
-            mask[:, token_id] = float('-inf')
-
-        return scores + mask
+        forbidden = self._get_forbidden_mask(scores.shape[-1], scores.device)
+        scores = scores.clone()
+        scores[:, forbidden] = float('-inf')
+        return scores
 
     def _apply_soft_constraint(self, scores: torch.FloatTensor) -> torch.FloatTensor:
         """Pénalise les tokens non autorisés sans les bloquer complètement."""
-        mask = torch.zeros_like(scores)
-
-        all_token_ids = set(range(scores.shape[-1]))
-        forbidden_token_ids = all_token_ids - self.allowed_token_ids
-
-        # Appliquer une pénalité aux tokens interdits
-        for token_id in forbidden_token_ids:
-            mask[:, token_id] = -self.penalty_weight
-
-        return scores + mask
+        forbidden = self._get_forbidden_mask(scores.shape[-1], scores.device)
+        scores = scores.clone()
+        scores[:, forbidden] -= self.penalty_weight
+        return scores
 
     def _apply_adaptive_constraint(self, scores: torch.FloatTensor) -> torch.FloatTensor:
         """
         Mode adaptatif : hard constraint, mais si trop peu de tokens disponibles,
         on garde les N meilleurs tokens même s'ils ne sont pas dans le vocabulaire connu.
         """
+        vocab_size = scores.shape[-1]
+        forbidden = self._get_forbidden_mask(vocab_size, scores.device)
+        allowed_mask = ~forbidden
+
         # Compter combien de tokens autorisés ont une probabilité raisonnable
-        scores_copy = scores.clone()
-        allowed_mask = torch.full_like(scores, False, dtype=torch.bool)
-
-        for token_id in self.allowed_token_ids:
-            allowed_mask[:, token_id] = True
-
-        # Si on a assez de tokens autorisés, mode hard
         num_viable_allowed = (allowed_mask & (scores > float('-inf'))).sum(dim=-1)
 
         if num_viable_allowed.min() >= self.min_allowed_tokens:
-            return self._apply_hard_constraint(scores)
+            scores = scores.clone()
+            scores[:, forbidden] = float('-inf')
+            return scores
 
-        # Sinon, on garde les top-k tokens même si inconnus
-        # Pour éviter de bloquer complètement la génération
-        top_k_values, top_k_indices = torch.topk(scores, k=self.min_allowed_tokens, dim=-1)
+        # Fallback : étendre l'autorisation aux top-k tokens pour éviter le blocage
+        top_k_indices = torch.topk(scores, k=self.min_allowed_tokens, dim=-1).indices
+        # Construire un masque étendu sans muter self.allowed_token_ids (thread-safe)
+        extended_allowed = allowed_mask.clone()
+        extended_allowed[top_k_indices.reshape(-1)] = True
 
-        # Créer un masque qui garde soit les tokens autorisés, soit les top-k
-        adaptive_allowed = self.allowed_token_ids.copy()
-        for batch_idx in range(scores.shape[0]):
-            for idx in top_k_indices[batch_idx]:
-                adaptive_allowed.add(idx.item())
-
-        # Appliquer le hard constraint avec le vocabulaire étendu
-        original_allowed = self.allowed_token_ids
-        self.allowed_token_ids = adaptive_allowed
-        result = self._apply_hard_constraint(scores)
-        self.allowed_token_ids = original_allowed
-
-        return result
+        scores = scores.clone()
+        scores[:, ~extended_allowed] = float('-inf')
+        return scores
 
 
 class GrammarGuidedLogitsProcessor(LogitsProcessor):

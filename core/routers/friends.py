@@ -13,7 +13,7 @@ Endpoints:
   GET    /api/friends/leaderboard         Friends leaderboard ranked by vocab + mastery
 """
 
-from datetime import datetime, timedelta, date as Date
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, or_, and_, func
@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth import get_current_user
 from database import get_db
 from models import User, VocabularyItem, Friendship, LearningSession
+from utils import streak_from_dates
 from schemas import (
     FriendRequestBody, FriendshipResponse,
     PublicUserProfile, FriendsLeaderboardEntry,
@@ -31,25 +32,6 @@ router = APIRouter(prefix="/api/friends", tags=["friends"])
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-
-def _streak_from_dates(dates: list[Date]) -> int:
-    """Compute consecutive daily streak from a list of activity dates (pure Python)."""
-    if not dates:
-        return 0
-    unique = sorted(set(dates), reverse=True)
-    today = datetime.utcnow().date()
-    # No activity today or yesterday → streak is broken
-    if unique[0] < today - timedelta(days=1):
-        return 0
-    streak = 0
-    expected = unique[0]
-    for d in unique:
-        if d == expected:
-            streak += 1
-            expected = d - timedelta(days=1)
-        else:
-            break
-    return streak
 
 
 async def _batch_profiles(
@@ -100,7 +82,7 @@ async def _batch_profiles(
             jlpt_level=u.jlpt_level,
             vocabulary_size=int(getattr(vocab_stats.get(u.id), "vocab_size", 0) or 0),
             words_mastered=int(getattr(vocab_stats.get(u.id), "words_mastered", 0) or 0),
-            current_streak_days=_streak_from_dates(sessions_by_user.get(u.id, [])),
+            current_streak_days=streak_from_dates(sessions_by_user.get(u.id, [])),
         )
         for u in users
     }
@@ -287,7 +269,7 @@ async def accept_request(
         raise HTTPException(409, f"Request is already {friendship.status}")
 
     friendship.status = "accepted"
-    friendship.updated_at = datetime.utcnow()
+    friendship.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(friendship)
     return await _to_response(friendship, current_user.id, db)
@@ -309,7 +291,7 @@ async def decline_request(
         raise HTTPException(409, f"Request is already {friendship.status}")
 
     friendship.status = "declined"
-    friendship.updated_at = datetime.utcnow()
+    friendship.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(friendship)
     return await _to_response(friendship, current_user.id, db)

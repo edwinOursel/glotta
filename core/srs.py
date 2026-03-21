@@ -18,7 +18,7 @@ Rules:
 Ease factor stays in [1.3, ∞), updated after every review.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from models import VocabularyItem
 
 
@@ -67,7 +67,7 @@ def sm2_review(item: VocabularyItem, quality: int) -> VocabularyItem:
     item.mastery_level = min(5, item.repetition // 2)
 
     # ── Schedule next review ───────────────────────────────────────────
-    item.next_review_at = datetime.utcnow() + timedelta(days=item.interval)
+    item.next_review_at = datetime.now(timezone.utc) + timedelta(days=item.interval)
 
     return item
 
@@ -77,7 +77,7 @@ def words_due(items: list[VocabularyItem], limit: int = 20) -> list[VocabularyIt
     Return items whose next_review_at is now or in the past,
     sorted by most overdue first, capped at *limit*.
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     due = [w for w in items if w.next_review_at <= now]
     due.sort(key=lambda w: w.next_review_at)
     return due[:limit]

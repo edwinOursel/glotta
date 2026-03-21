@@ -22,25 +22,25 @@
 
 ## MEDIUM — Architecture
 
-- [ ] `core/models.py` — Index manquants sur FK (composite index sur status+requester_id, status+addressee_id)
-- [ ] `core/routers/vocabulary.py:74` — LIKE wildcard injection (%, _ non échappés dans search)
-- [ ] `core/routers/sessions.py:114` — Calcul du streak en mémoire (fetch toutes les dates)
-- [ ] `core/routers/friends.py:35` — Duplication du calcul de streak (même logique que sessions.py)
+- [x] `core/models.py` — Index manquants sur FK (composite index sur status+requester_id, status+addressee_id)
+- [x] `core/routers/vocabulary.py:74` — LIKE wildcard injection (%, _ non échappés dans search)
+- [x] `core/routers/sessions.py:114` — Calcul du streak en mémoire (fetch toutes les dates)
+- [x] `core/routers/friends.py:35` — Duplication du calcul de streak (même logique que sessions.py)
 - [ ] `core/routers/challenges.py:36` — Score recalculé live à chaque vue
 - [ ] `core/auth.py` — Pas de blacklist/rotation des tokens (logout ne révoque pas les JWT)
 - [ ] `core/auth.py` — Pas de rate limiting sur refresh token
 - [ ] `mobile/lib/providers/` — StateNotifier (Riverpod v1) → migrer vers AsyncNotifierProvider (v2)
-- [ ] `mobile/lib/providers/vocabulary_provider.dart:105` — Double appel API sur filterByLevel()
+- [x] `mobile/lib/providers/vocabulary_provider.dart:105` — Double appel API sur filterByLevel()
 - [ ] `mobile/lib/providers/gamification_provider.dart` — Trophées hardcodés côté client
 - [ ] `mobile/lib/providers/gamification_provider.dart:31` — Streak/trophées en SharedPreferences non chiffré
 - [ ] `mobile/lib/models/` — Pas de == / hashCode sur les modèles Dart
 - [ ] `mobile/lib/` — Pas de gestion offline
-- [ ] `core/schemas.py` — Pas de max_length sur les champs string (username, word, notes, etc.)
+- [x] `core/schemas.py` — Pas de max_length sur les champs string (username, word, notes, etc.)
 - [ ] `core/database.py:12` — DATABASE_URL avec fallback SQLite hardcodé dans le cwd
 
 ## LOW
 
-- [ ] `core/models.py` — datetime.utcnow() deprecated (Python 3.12+) → datetime.now(UTC)
+- [x] `core/models.py` — datetime.utcnow() deprecated (Python 3.12+) → datetime.now(UTC)
 - [ ] `mobile/lib/l10n/app_localizations.dart` — i18n manuel → migrer vers gen_l10n + .arb
 - [ ] `mobile/lib/services/api_service.dart` — Pas de cert pinning
 - [ ] `core/srs.py:67` — mastery_level = repetition // 2 sans CheckConstraint DB

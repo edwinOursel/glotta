@@ -7,7 +7,7 @@ JWT authentication helpers.
 """
 
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from jose import JWTError, jwt
@@ -49,7 +49,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 # ── Token creation ────────────────────────────────────────────────────────────
 
 def create_access_token(user_id: str) -> str:
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     return jwt.encode(
         {"sub": user_id, "type": "access", "exp": expire},
         SECRET_KEY, algorithm=ALGORITHM,
@@ -57,7 +57,7 @@ def create_access_token(user_id: str) -> str:
 
 
 def create_refresh_token(user_id: str) -> str:
-    expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     return jwt.encode(
         {"sub": user_id, "type": "refresh", "exp": expire},
         SECRET_KEY, algorithm=ALGORITHM,

@@ -15,7 +15,7 @@ Endpoints:
 """
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, List
 
@@ -71,11 +71,13 @@ async def list_vocabulary(
         q = q.where(VocabularyItem.jlpt_level == level)
 
     if search:
-        pattern = f"%{search}%"
+        # Escape LIKE special characters so user input is treated as a literal string
+        escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        pattern = f"%{escaped}%"
         q = q.where(
-            VocabularyItem.word.ilike(pattern)
-            | VocabularyItem.reading.ilike(pattern)
-            | VocabularyItem.meaning.ilike(pattern)
+            VocabularyItem.word.ilike(pattern, escape="\\")
+            | VocabularyItem.reading.ilike(pattern, escape="\\")
+            | VocabularyItem.meaning.ilike(pattern, escape="\\")
         )
 
     q = q.order_by(VocabularyItem.date_added.desc()).offset(offset).limit(limit)
@@ -107,7 +109,7 @@ async def vocabulary_stats(
     by_level = {row[0] or "unknown": row[1] for row in level_r.all()}
 
     # Due today
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     due_r = await db.execute(
         select(func.count()).where(
             and_(VocabularyItem.user_id == uid, VocabularyItem.next_review_at <= now)
@@ -140,7 +142,7 @@ async def get_due_words(
     db:           AsyncSession = Depends(get_db),
 ):
     """Return words whose next_review_at ≤ now, oldest first."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     result = await db.execute(
         select(VocabularyItem)
         .where(

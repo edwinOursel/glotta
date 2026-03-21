@@ -2,7 +2,7 @@
 Learning sessions router — start/end sessions, progress summary.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -12,6 +12,7 @@ from sqlalchemy import select, func, and_
 from database import get_db
 from models import User, LearningSession, VocabularyItem
 from auth import get_current_user
+from utils import streak_from_dates
 from schemas import (
     StartSessionRequest, EndSessionRequest,
     SessionResponse, ProgressResponse,
@@ -52,7 +53,7 @@ async def end_session(
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     session.ended_at        = now
     session.duration_secs   = int((now - session.started_at).total_seconds())
     session.words_practiced = body.words_practiced
@@ -110,19 +111,14 @@ async def get_progress(
     )
     words_mastered = mastered_r.scalar_one()
 
-    # Streak: count consecutive days with at least one session (simple version)
+    # Streak: count consecutive days with at least one session
     sessions_r = await db.execute(
         select(LearningSession.started_at)
         .where(LearningSession.user_id == uid)
         .order_by(LearningSession.started_at.desc())
         .limit(365)
     )
-    dates = {s.started_at.date() for s in sessions_r.scalars()}
-    streak = 0
-    day = datetime.utcnow().date()
-    while day in dates:
-        streak += 1
-        day -= timedelta(days=1)
+    streak = streak_from_dates(list(sessions_r.scalars()))
 
     return ProgressResponse(
         total_sessions        = total_sessions,

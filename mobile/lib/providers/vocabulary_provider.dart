@@ -68,24 +68,19 @@ class VocabularyNotifier extends StateNotifier<VocabularyState> {
         state = state.copyWith(isLoading: false);
         return;
       }
-      final api      = _ref.read(apiServiceProvider);
-      final rawFilt  = await api.getUserVocabulary(
-        accessToken: token,
-        level:       state.selectedLevel,
-        limit:       500,
-      );
-      final filtered = rawFilt.map(VocabularyItem.fromJson).toList();
+      final api = _ref.read(apiServiceProvider);
 
-      // Also keep an unfiltered total for stats/trophies
-      List<VocabularyItem> all = filtered;
-      if (state.selectedLevel != null) {
-        final rawAll = await api.getUserVocabulary(
-          accessToken: token,
-          level:       null,
-          limit:       500,
-        );
-        all = rawAll.map(VocabularyItem.fromJson).toList();
-      }
+      // Run both calls concurrently when a filter is active.
+      final futures = [
+        api.getUserVocabulary(accessToken: token, level: state.selectedLevel, limit: 500),
+        if (state.selectedLevel != null)
+          api.getUserVocabulary(accessToken: token, level: null, limit: 500),
+      ];
+      final results = await Future.wait(futures);
+      final filtered = results[0].map(VocabularyItem.fromJson).toList();
+      final List<VocabularyItem> all = results.length > 1
+          ? results[1].map(VocabularyItem.fromJson).toList()
+          : filtered;
 
       state = state.copyWith(
         words:     filtered,

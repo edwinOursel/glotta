@@ -2,7 +2,7 @@
 User profile router — read and update the authenticated user's profile.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,7 +32,7 @@ async def update_profile(
     if body.constraint_mode is not None:
         current_user.constraint_mode = body.constraint_mode
 
-    current_user.last_active = datetime.utcnow()
+    current_user.last_active = datetime.now(timezone.utc)
     db.add(current_user)
     await db.flush()   # write to DB within the transaction; raises on constraint violation
     return current_user

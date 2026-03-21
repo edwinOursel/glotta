@@ -4,22 +4,15 @@ Pydantic schemas — request bodies and response shapes for every router.
 
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
 class RegisterRequest(BaseModel):
     email: EmailStr
-    password: str
-    username: Optional[str] = None
-
-    @field_validator("password")
-    @classmethod
-    def password_strength(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
-        return v
+    password: str = Field(min_length=8, max_length=256)
+    username: Optional[str] = Field(default=None, max_length=64)
 
 
 class LoginRequest(BaseModel):
@@ -55,7 +48,7 @@ class UserProfileResponse(BaseModel):
 
 
 class UpdateProfileRequest(BaseModel):
-    username: Optional[str] = None
+    username: Optional[str] = Field(default=None, max_length=64)
     jlpt_level: Optional[str] = None
     constraint_mode: Optional[str] = None
 
@@ -97,12 +90,12 @@ class VocabularyItemResponse(BaseModel):
 
 
 class AddWordRequest(BaseModel):
-    word: str
-    reading: Optional[str] = None
-    meaning: Optional[str] = None
-    part_of_speech: Optional[str] = None
+    word: str = Field(max_length=100)
+    reading: Optional[str] = Field(default=None, max_length=200)
+    meaning: Optional[str] = Field(default=None, max_length=500)
+    part_of_speech: Optional[str] = Field(default=None, max_length=50)
     jlpt_level: Optional[str] = None
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(default=None, max_length=2000)
 
 
 class AddWordsRequest(BaseModel):
@@ -110,11 +103,11 @@ class AddWordsRequest(BaseModel):
 
 
 class UpdateWordRequest(BaseModel):
-    reading: Optional[str] = None
-    meaning: Optional[str] = None
-    part_of_speech: Optional[str] = None
+    reading: Optional[str] = Field(default=None, max_length=200)
+    meaning: Optional[str] = Field(default=None, max_length=500)
+    part_of_speech: Optional[str] = Field(default=None, max_length=50)
     jlpt_level: Optional[str] = None
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(default=None, max_length=2000)
 
 
 class SeedLevelRequest(BaseModel):

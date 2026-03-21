@@ -7,12 +7,16 @@ User → owns → GeneratedText
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import (
     Column, String, Integer, Float, DateTime, Text,
-    ForeignKey, UniqueConstraint, CheckConstraint,
+    ForeignKey, Index, UniqueConstraint, CheckConstraint,
 )
 from sqlalchemy.orm import relationship
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
 
 from database import Base
 
@@ -30,8 +34,8 @@ class User(Base):
     username        = Column(String, nullable=True)
     jlpt_level      = Column(String, default="N5")
     constraint_mode = Column(String, default="soft")
-    created_at      = Column(DateTime, default=datetime.utcnow)
-    last_active     = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at      = Column(DateTime, default=_now)
+    last_active     = Column(DateTime, default=_now, onupdate=_now)
 
     vocabulary       = relationship("VocabularyItem",  back_populates="user", cascade="all, delete-orphan")
     sessions         = relationship("LearningSession", back_populates="user", cascade="all, delete-orphan")
@@ -68,13 +72,13 @@ class VocabularyItem(Base):
     repetition     = Column(Integer, default=0)
     interval       = Column(Integer, default=1)       # days
     ease_factor    = Column(Float,   default=2.5)
-    next_review_at = Column(DateTime, default=datetime.utcnow)
+    next_review_at = Column(DateTime, default=_now)
 
     # Stats
     times_seen     = Column(Integer, default=0)
     times_correct  = Column(Integer, default=0)
     mastery_level  = Column(Integer, default=0)  # 0-5
-    date_added     = Column(DateTime, default=datetime.utcnow)
+    date_added     = Column(DateTime, default=_now)
 
     user = relationship("User", back_populates="vocabulary")
 
@@ -84,7 +88,7 @@ class LearningSession(Base):
 
     id              = Column(String, primary_key=True, default=_uuid)
     user_id         = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    started_at      = Column(DateTime, default=datetime.utcnow)
+    started_at      = Column(DateTime, default=_now)
     ended_at        = Column(DateTime, nullable=True)
     duration_secs   = Column(Integer, nullable=True)
     words_practiced = Column(Integer, default=0)
@@ -104,7 +108,7 @@ class GeneratedText(Base):
     prompt         = Column(Text, nullable=False)
     constraint_mode = Column(String)
     intent         = Column(String)
-    created_at     = Column(DateTime, default=datetime.utcnow)
+    created_at     = Column(DateTime, default=_now)
 
     user = relationship("User", back_populates="generated_texts")
 
@@ -118,14 +122,16 @@ class Friendship(Base):
     __tablename__ = "friendships"
     __table_args__ = (
         UniqueConstraint("requester_id", "addressee_id", name="uq_friendship"),
+        Index("ix_friendship_status_requester", "status", "requester_id"),
+        Index("ix_friendship_status_addressee", "status", "addressee_id"),
     )
 
     id           = Column(String, primary_key=True, default=_uuid)
     requester_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     addressee_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     status       = Column(String, default="pending")   # pending | accepted | declined
-    created_at   = Column(DateTime, default=datetime.utcnow)
-    updated_at   = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at   = Column(DateTime, default=_now)
+    updated_at   = Column(DateTime, default=_now, onupdate=_now)
 
     requester = relationship("User", foreign_keys=[requester_id])
     addressee = relationship("User", foreign_keys=[addressee_id])
@@ -145,6 +151,8 @@ class Challenge(Base):
     __tablename__ = "challenges"
     __table_args__ = (
         CheckConstraint("duration_days >= 1 AND duration_days <= 30", name="ck_challenge_duration"),
+        Index("ix_challenge_status_sender", "status", "sender_id"),
+        Index("ix_challenge_status_recipient", "status", "recipient_id"),
     )
 
     id               = Column(String, primary_key=True, default=_uuid)
@@ -158,7 +166,7 @@ class Challenge(Base):
     sender_score     = Column(Float, nullable=True)
     recipient_score  = Column(Float, nullable=True)
     winner_id        = Column(String, nullable=True)    # user_id or None for tie
-    created_at       = Column(DateTime, default=datetime.utcnow)
+    created_at       = Column(DateTime, default=_now)
 
     sender    = relationship("User", foreign_keys=[sender_id])
     recipient = relationship("User", foreign_keys=[recipient_id])

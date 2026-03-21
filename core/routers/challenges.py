@@ -15,7 +15,7 @@ Score semantics (computed live):
   accuracy_duel — avg accuracy (times_correct / times_seen) on reviewed words
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -45,7 +45,7 @@ async def _compute_score(
         q = select(func.count(VocabularyItem.id)).where(
             VocabularyItem.user_id == user_id,
             VocabularyItem.date_added >= starts_at,
-            VocabularyItem.date_added <= (ends_at or datetime.utcnow()),
+            VocabularyItem.date_added <= (ends_at or datetime.now(timezone.utc)),
         )
         result = await db.execute(q)
         return float(result.scalar() or 0)
@@ -80,7 +80,7 @@ async def _finalize_if_expired(challenge: Challenge, db: AsyncSession) -> Challe
     """If the challenge window has passed, compute final scores and set winner."""
     if challenge.status != "active":
         return challenge
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if challenge.ends_at is None or now < challenge.ends_at:
         return challenge
 
@@ -304,7 +304,7 @@ async def accept_challenge(
     if challenge.status != "pending":
         raise HTTPException(409, f"Challenge is already {challenge.status}")
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     challenge.status    = "active"
     challenge.starts_at = now
     challenge.ends_at   = now + timedelta(days=challenge.duration_days)

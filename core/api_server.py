@@ -10,11 +10,17 @@ Provides REST API endpoints for the mobile app to:
 - Constrained LLM text generation (simple + agentic)
 """
 
+import logging
 import os
+import re
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, HTTPException
+from pathlib import Path
+
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler
 from typing import List, Optional, Dict
 import uvicorn
 
@@ -24,7 +30,11 @@ from user_vocabulary import UserVocabulary
 from agentic_graph import AgenticGlotta
 from auth import get_current_user
 from models import User
+from limiter import limiter
 from routers import auth, users, vocabulary, sessions, friends, challenges
+
+log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
 # ============================================================================
 # Lifespan — DB init on startup
@@ -45,6 +55,9 @@ app = FastAPI(
     version="0.2.0",
     lifespan=lifespan,
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # ── Routers ──────────────────────────────────────────────────────────────────
 app.include_router(auth.router)
@@ -101,6 +114,8 @@ def get_agentic_glotta() -> AgenticGlotta:
 # Request/Response Models
 # ============================================================================
 
+_ALLOWED_SYSTEM_PROMPT = re.compile(r"^[\w\s\u3000-\u9fff\u30a0-\u30ff\u3040-\u309f.,;:!?()\-]{1,200}$")
+
 class GenerateRequest(BaseModel):
     prompt: str
     max_length: int = 50
@@ -108,7 +123,7 @@ class GenerateRequest(BaseModel):
     use_constraints: bool = True
     constraint_mode: str = "hard"
     num_sequences: int = 1
-    system_prompt: Optional[str] = None  # grammar theme / word focus hint
+    system_prompt: Optional[str] = None  # grammar theme hint (sanitized server-side)
 
 class GenerateResponse(BaseModel):
     texts: List[str]
@@ -197,9 +212,11 @@ async def generate_text(request: GenerateRequest):
         if request.use_constraints and generator.constraint_mode != request.constraint_mode:
             generator.set_constraint_mode(request.constraint_mode)
 
-        # Prepend system_prompt to prime the model toward the desired context
+        # Prepend system_prompt — only if it matches the allowed pattern
         effective_prompt = request.prompt
         if request.system_prompt:
+            if not _ALLOWED_SYSTEM_PROMPT.match(request.system_prompt):
+                raise HTTPException(status_code=400, detail="Invalid system_prompt content")
             effective_prompt = f"{request.system_prompt}\n{request.prompt}"
 
         # Generate
@@ -217,8 +234,11 @@ async def generate_text(request: GenerateRequest):
             constraint_mode=request.constraint_mode if request.use_constraints else None
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
+        log.exception("Generation failed")
+        raise HTTPException(status_code=500, detail="Generation failed")
 
 @app.get("/api/vocabulary", response_model=VocabularyResponse)
 async def get_vocabulary():
@@ -229,8 +249,9 @@ async def get_vocabulary():
 
         return VocabularyResponse(**stats)
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get vocabulary: {str(e)}")
+    except Exception:
+        log.exception("Failed to get vocabulary stats")
+        raise HTTPException(status_code=500, detail="Failed to get vocabulary")
 
 @app.post("/api/vocabulary/words")
 async def add_words(request: AddWordsRequest):
@@ -245,8 +266,9 @@ async def add_words(request: AddWordsRequest):
             "total_words": len(generator.user_vocabulary)
         }
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to add words: {str(e)}")
+    except Exception:
+        log.exception("Failed to add words")
+        raise HTTPException(status_code=500, detail="Failed to add words")
 
 @app.delete("/api/vocabulary/words/{word}")
 async def remove_word(word: str):
@@ -261,39 +283,53 @@ async def remove_word(word: str):
             "total_words": len(generator.user_vocabulary)
         }
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to remove word: {str(e)}")
+    except Exception:
+        log.exception("Failed to remove word")
+        raise HTTPException(status_code=500, detail="Failed to remove word")
+
+_VOCAB_FILENAME_RE = re.compile(r'^[\w\-]+\.json$')
+_VOCAB_DIR = Path("vocabularies")
+
+
+def _safe_vocab_path(filename: str) -> Path:
+    """Resolve filename inside the vocabularies/ directory, rejecting path traversal."""
+    name = Path(filename).name  # strip any directory component
+    if name != filename or not _VOCAB_FILENAME_RE.match(name):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    _VOCAB_DIR.mkdir(exist_ok=True)
+    return _VOCAB_DIR / name
+
 
 @app.post("/api/vocabulary/save")
 async def save_vocabulary(filename: str = "user_vocabulary.json"):
     """Save vocabulary to file."""
     try:
+        safe_path = _safe_vocab_path(filename)
         generator = get_generator()
-        generator.user_vocabulary.save_to_file(filename)
+        generator.user_vocabulary.save_to_file(str(safe_path))
+        return {"status": "success", "filename": safe_path.name}
+    except HTTPException:
+        raise
+    except Exception:
+        log.exception("Failed to save vocabulary")
+        raise HTTPException(status_code=500, detail="Failed to save vocabulary")
 
-        return {
-            "status": "success",
-            "filename": filename
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save vocabulary: {str(e)}")
 
 @app.post("/api/vocabulary/load")
 async def load_vocabulary(filename: str = "user_vocabulary.json"):
     """Load vocabulary from file."""
     try:
+        safe_path = _safe_vocab_path(filename)
+        if not safe_path.exists():
+            raise HTTPException(status_code=404, detail="Vocabulary file not found")
         generator = get_generator()
-        generator.user_vocabulary.load_from_file(filename)
-
-        return {
-            "status": "success",
-            "filename": filename,
-            "total_words": len(generator.user_vocabulary)
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=404, detail=f"Failed to load vocabulary: {str(e)}")
+        generator.user_vocabulary.load_from_file(str(safe_path))
+        return {"status": "success", "filename": safe_path.name, "total_words": len(generator.user_vocabulary)}
+    except HTTPException:
+        raise
+    except Exception:
+        log.exception("Failed to load vocabulary")
+        raise HTTPException(status_code=500, detail="Failed to load vocabulary")
 
 @app.get("/api/settings/constraint-mode")
 async def get_constraint_mode():
@@ -303,8 +339,9 @@ async def get_constraint_mode():
         return {
             "constraint_mode": generator.constraint_mode
         }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        log.exception("Failed to get constraint mode")
+        raise HTTPException(status_code=500, detail="Failed to get constraint mode")
 
 @app.post("/api/settings/constraint-mode")
 async def set_constraint_mode(mode: str):
@@ -323,8 +360,9 @@ async def set_constraint_mode(mode: str):
 
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        log.exception("Failed to set constraint mode")
+        raise HTTPException(status_code=500, detail="Failed to set constraint mode")
 
 @app.get("/api/stats", response_model=StatsResponse)
 async def get_stats():
@@ -338,8 +376,9 @@ async def get_stats():
             model_name=generator.get_model_info()["model_name"]
         )
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        log.exception("Failed to get stats")
+        raise HTTPException(status_code=500, detail="Failed to get stats")
 
 @app.post("/api/agentic/generate", response_model=AgenticGenerateResponse)
 async def agentic_generate(request: AgenticGenerateRequest):
@@ -378,8 +417,9 @@ async def agentic_generate(request: AgenticGenerateRequest):
             iterations=result.get("iterations", 0)
         )
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Agentic generation failed: {str(e)}")
+    except Exception:
+        log.exception("Agentic generation failed")
+        raise HTTPException(status_code=500, detail="Agentic generation failed")
 
 # ============================================================================
 # Run Server

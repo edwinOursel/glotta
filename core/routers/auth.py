@@ -2,7 +2,7 @@
 Auth router — register, login, token refresh, whoami.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -13,6 +13,7 @@ from auth import (
     create_access_token, create_refresh_token,
     decode_token, get_current_user,
 )
+from limiter import limiter
 from schemas import (
     RegisterRequest, LoginRequest, RefreshRequest,
     TokenResponse, AccessTokenResponse, UserProfileResponse,
@@ -22,7 +23,8 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/minute")
+async def register(request: Request, body: RegisterRequest, db: AsyncSession = Depends(get_db)):
     # Email uniqueness check
     result = await db.execute(select(User).where(User.email == body.email))
     if result.scalar_one_or_none():
@@ -43,7 +45,8 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def login(request: Request, body: LoginRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == body.email))
     user: User | None = result.scalar_one_or_none()
 
@@ -60,7 +63,8 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/refresh", response_model=AccessTokenResponse)
-async def refresh(body: RefreshRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("20/minute")
+async def refresh(request: Request, body: RefreshRequest, db: AsyncSession = Depends(get_db)):
     user_id = decode_token(body.refresh_token, expected_type="refresh")
     result  = await db.execute(select(User).where(User.id == user_id))
     if not result.scalar_one_or_none():

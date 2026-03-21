@@ -22,7 +22,12 @@ from models import User
 
 # ── Configuration ────────────────────────────────────────────────────────────
 
-SECRET_KEY = os.environ.get("SECRET_KEY", "change-this-secret-in-production")
+SECRET_KEY = os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError(
+        "SECRET_KEY environment variable is not set. "
+        "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+    )
 ALGORITHM  = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS   = 30

@@ -13,6 +13,7 @@ Provides REST API endpoints for the mobile app to:
 import logging
 import os
 import re
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -58,6 +59,15 @@ app = FastAPI(
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+@app.middleware("http")
+async def _log_requests(request: Request, call_next):
+    start = time.monotonic()
+    response = await call_next(request)
+    ms = int((time.monotonic() - start) * 1000)
+    log.info("%s %s → %d (%dms)", request.method, request.url.path, response.status_code, ms)
+    return response
 
 # ── Routers ──────────────────────────────────────────────────────────────────
 app.include_router(auth.router)

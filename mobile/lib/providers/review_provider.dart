@@ -19,6 +19,7 @@ class ReviewSessionState {
   final Map<String, int>     results;      // wordId → quality given
   final String?              _sessionId;   // backend session id (internal)
   final String?              error;
+  final int                  failedSyncs;  // ratings that could not be sent to server
 
   const ReviewSessionState({
     this.phase        = ReviewPhase.loading,
@@ -27,6 +28,7 @@ class ReviewSessionState {
     this.results      = const {},
     String? sessionId,
     this.error,
+    this.failedSyncs  = 0,
   }) : _sessionId = sessionId;
 
   ReviewSessionState copyWith({
@@ -36,6 +38,7 @@ class ReviewSessionState {
     Map<String, int>?     results,
     String?               sessionId,
     String?               error,
+    int?                  failedSyncs,
     bool                  clearError   = false,
     bool                  clearSession = false,
   }) =>
@@ -46,6 +49,7 @@ class ReviewSessionState {
         results:      results      ?? this.results,
         sessionId:    clearSession ? null : sessionId ?? _sessionId,
         error:        clearError   ? null : error     ?? this.error,
+        failedSyncs:  failedSyncs  ?? this.failedSyncs,
       );
 
   bool get isDone      => currentIndex >= queue.length;
@@ -140,10 +144,13 @@ class ReviewNotifier extends StateNotifier<ReviewSessionState> {
       phase:        isLastCard ? ReviewPhase.done : ReviewPhase.card,
     );
 
-    // Fire-and-forget SM-2 update
+    // Optimistic UI: card already advanced above. Now sync to server.
     try {
       final token = await _token();
-      if (token == null) return;
+      if (token == null) {
+        state = state.copyWith(failedSyncs: state.failedSyncs + 1);
+        return;
+      }
       final api = _ref.read(apiServiceProvider);
       await api.reviewWord(
         accessToken: token,
@@ -152,6 +159,7 @@ class ReviewNotifier extends StateNotifier<ReviewSessionState> {
       );
     } catch (e) {
       debugPrint('[ReviewNotifier] Failed to submit SM-2 rating: $e');
+      state = state.copyWith(failedSyncs: state.failedSyncs + 1);
     }
 
     // When the last card is rated: close session + refresh downstream state

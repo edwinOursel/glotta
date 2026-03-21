@@ -15,8 +15,8 @@
 - [x] `core/api_server.py:200` — Prompt injection via `system_prompt` fourni par l'utilisateur
 - [ ] `core/database.py` — Pas de migrations Alembic (create_all() en prod = pas de rollback)
 - [ ] `mobile/lib/services/api_service.dart:18-20` — URL API hardcodée (`10.0.2.2:8000`, Android emulator only)
-- [ ] `mobile/lib/services/api_service.dart` — Pas de timeout HTTP ni de retry
-- [ ] `mobile/lib/providers/review_provider.dart:128` — submitRating() fire-and-forget (rating perdu si réseau fail)
+- [x] `mobile/lib/services/api_service.dart` — Pas de timeout HTTP ni de retry (timeout 30s ajouté sur tous les appels)
+- [x] `mobile/lib/providers/review_provider.dart:128` — submitRating() fire-and-forget : failedSyncs tracké dans le state
 - [ ] `core/routers/` — Tous les codes d'erreur mappés sur 500 (pas de 400/403/404)
 - [ ] `core/` — print() partout, pas de logging structuré
 

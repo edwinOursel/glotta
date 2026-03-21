@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -24,10 +25,52 @@ class ApiService {
 
   // ── Internal helpers ───────────────────────────────────────────────────────
 
+  static const _kTimeout = Duration(seconds: 30);
+
   Map<String, String> _headers({String? accessToken}) => {
         'Content-Type': 'application/json',
         if (accessToken != null) 'Authorization': 'Bearer $accessToken',
       };
+
+  Future<http.Response> _get(Uri uri, {String? accessToken}) async {
+    try {
+      return await _client
+          .get(uri, headers: _headers(accessToken: accessToken))
+          .timeout(_kTimeout);
+    } on TimeoutException {
+      throw ApiException('Request timed out', 408);
+    }
+  }
+
+  Future<http.Response> _post(Uri uri, {String? accessToken, String? body}) async {
+    try {
+      return await _client
+          .post(uri, headers: _headers(accessToken: accessToken), body: body)
+          .timeout(_kTimeout);
+    } on TimeoutException {
+      throw ApiException('Request timed out', 408);
+    }
+  }
+
+  Future<http.Response> _patch(Uri uri, {String? accessToken, String? body}) async {
+    try {
+      return await _client
+          .patch(uri, headers: _headers(accessToken: accessToken), body: body)
+          .timeout(_kTimeout);
+    } on TimeoutException {
+      throw ApiException('Request timed out', 408);
+    }
+  }
+
+  Future<http.Response> _delete(Uri uri, {String? accessToken}) async {
+    try {
+      return await _client
+          .delete(uri, headers: _headers(accessToken: accessToken))
+          .timeout(_kTimeout);
+    } on TimeoutException {
+      throw ApiException('Request timed out', 408);
+    }
+  }
 
   /// Throws [ApiException] for non-2xx responses.
   void _checkStatus(http.Response response, String context) {
@@ -55,9 +98,8 @@ class ApiService {
     required String password,
     String? username,
   }) async {
-    final response = await _client.post(
+    final response = await _post(
       Uri.parse('$baseUrl/api/auth/register'),
-      headers: _headers(),
       body: jsonEncode({
         'email':    email,
         'password': password,
@@ -77,9 +119,8 @@ class ApiService {
     required String email,
     required String password,
   }) async {
-    final response = await _client.post(
+    final response = await _post(
       Uri.parse('$baseUrl/api/auth/login'),
-      headers: _headers(),
       body: jsonEncode({'email': email, 'password': password}),
     );
     _checkStatus(response, 'login');
@@ -92,9 +133,8 @@ class ApiService {
 
   /// Exchange a refresh token for a new access token.
   Future<String> refreshToken({required String refreshToken}) async {
-    final response = await _client.post(
+    final response = await _post(
       Uri.parse('$baseUrl/api/auth/refresh'),
-      headers: _headers(),
       body: jsonEncode({'refresh_token': refreshToken}),
     );
     _checkStatus(response, 'refresh');
@@ -104,9 +144,9 @@ class ApiService {
 
   /// Fetch the authenticated user's profile.
   Future<UserProfile> getProfile({required String accessToken}) async {
-    final response = await _client.get(
+    final response = await _get(
       Uri.parse('$baseUrl/api/auth/me'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
     );
     _checkStatus(response, 'getProfile');
     return UserProfile.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
@@ -124,9 +164,9 @@ class ApiService {
       if (jlptLevel      != null) 'jlpt_level':     jlptLevel,
       if (constraintMode != null) 'constraint_mode': constraintMode,
     };
-    final response = await _client.patch(
+    final response = await _patch(
       Uri.parse('$baseUrl/api/user/profile'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
       body: jsonEncode(body),
     );
     _checkStatus(response, 'updateProfile');
@@ -147,9 +187,9 @@ class ApiService {
     String constraintMode  = 'hard',
     int    numSequences    = 1,
   }) async {
-    final response = await _client.post(
+    final response = await _post(
       Uri.parse('$baseUrl/api/generate'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
       body: jsonEncode({
         'prompt':          prompt,
         'max_length':      maxLength,
@@ -182,15 +222,15 @@ class ApiService {
       'offset': '$offset',
     };
     final uri = Uri.parse('$baseUrl/api/vocabulary').replace(queryParameters: query);
-    final response = await _client.get(uri, headers: _headers(accessToken: accessToken));
+    final response = await _get(uri, accessToken: accessToken);
     _checkStatus(response, 'getUserVocabulary');
     return List<Map<String, dynamic>>.from(jsonDecode(response.body) as List);
   }
 
   Future<Map<String, dynamic>> getVocabularyStats({required String accessToken}) async {
-    final response = await _client.get(
+    final response = await _get(
       Uri.parse('$baseUrl/api/vocabulary/stats'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
     );
     _checkStatus(response, 'getVocabularyStats');
     return jsonDecode(response.body) as Map<String, dynamic>;
@@ -200,9 +240,9 @@ class ApiService {
     required String accessToken,
     int limit = 20,
   }) async {
-    final response = await _client.get(
+    final response = await _get(
       Uri.parse('$baseUrl/api/vocabulary/due?limit=$limit'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
     );
     _checkStatus(response, 'getDueWords');
     return List<Map<String, dynamic>>.from(jsonDecode(response.body) as List);
@@ -216,9 +256,9 @@ class ApiService {
     String? partOfSpeech,
     String? jlptLevel,
   }) async {
-    final response = await _client.post(
+    final response = await _post(
       Uri.parse('$baseUrl/api/vocabulary'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
       body: jsonEncode({
         'word': word,
         if (reading      != null) 'reading':       reading,
@@ -236,9 +276,9 @@ class ApiService {
     required String wordId,
     required int    quality,
   }) async {
-    final response = await _client.post(
+    final response = await _post(
       Uri.parse('$baseUrl/api/vocabulary/$wordId/review'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
       body: jsonEncode({'quality': quality}),
     );
     _checkStatus(response, 'reviewWord');
@@ -249,9 +289,9 @@ class ApiService {
     required String accessToken,
     required String wordId,
   }) async {
-    final response = await _client.delete(
+    final response = await _delete(
       Uri.parse('$baseUrl/api/vocabulary/$wordId'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
     );
     _checkStatus(response, 'deleteWord');
   }
@@ -260,9 +300,9 @@ class ApiService {
     required String accessToken,
     required String jlptLevel,
   }) async {
-    final response = await _client.post(
+    final response = await _post(
       Uri.parse('$baseUrl/api/vocabulary/seed/$jlptLevel'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
     );
     _checkStatus(response, 'seedJlptLevel');
     return jsonDecode(response.body) as Map<String, dynamic>;
@@ -277,9 +317,9 @@ class ApiService {
     String sessionType    = 'generate',
     String? constraintMode,
   }) async {
-    final response = await _client.post(
+    final response = await _post(
       Uri.parse('$baseUrl/api/sessions/start'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
       body: jsonEncode({
         'session_type':    sessionType,
         if (constraintMode != null) 'constraint_mode': constraintMode,
@@ -295,9 +335,9 @@ class ApiService {
     int wordsPracticed = 0,
     int wordsCorrect   = 0,
   }) async {
-    final response = await _client.post(
+    final response = await _post(
       Uri.parse('$baseUrl/api/sessions/end'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
       body: jsonEncode({
         'session_id':      sessionId,
         'words_practiced': wordsPracticed,
@@ -309,9 +349,9 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> getProgress({required String accessToken}) async {
-    final response = await _client.get(
+    final response = await _get(
       Uri.parse('$baseUrl/api/sessions/progress'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
     );
     _checkStatus(response, 'getProgress');
     return jsonDecode(response.body) as Map<String, dynamic>;
@@ -324,9 +364,9 @@ class ApiService {
   Future<List<Map<String, dynamic>>> getFriends({
     required String accessToken,
   }) async {
-    final response = await _client.get(
+    final response = await _get(
       Uri.parse('$baseUrl/api/friends'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
     );
     _checkStatus(response, 'getFriends');
     return List<Map<String, dynamic>>.from(jsonDecode(response.body) as List);
@@ -335,9 +375,9 @@ class ApiService {
   Future<List<Map<String, dynamic>>> getIncomingRequests({
     required String accessToken,
   }) async {
-    final response = await _client.get(
+    final response = await _get(
       Uri.parse('$baseUrl/api/friends/requests'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
     );
     _checkStatus(response, 'getIncomingRequests');
     return List<Map<String, dynamic>>.from(jsonDecode(response.body) as List);
@@ -346,9 +386,9 @@ class ApiService {
   Future<List<Map<String, dynamic>>> getSentRequests({
     required String accessToken,
   }) async {
-    final response = await _client.get(
+    final response = await _get(
       Uri.parse('$baseUrl/api/friends/sent'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
     );
     _checkStatus(response, 'getSentRequests');
     return List<Map<String, dynamic>>.from(jsonDecode(response.body) as List);
@@ -358,9 +398,9 @@ class ApiService {
     required String accessToken,
     required String addresseeId,
   }) async {
-    final response = await _client.post(
+    final response = await _post(
       Uri.parse('$baseUrl/api/friends/request'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
       body: jsonEncode({'addressee_id': addresseeId}),
     );
     _checkStatus(response, 'sendFriendRequest');
@@ -371,9 +411,9 @@ class ApiService {
     required String accessToken,
     required String friendshipId,
   }) async {
-    final response = await _client.post(
+    final response = await _post(
       Uri.parse('$baseUrl/api/friends/request/$friendshipId/accept'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
     );
     _checkStatus(response, 'acceptFriendRequest');
     return jsonDecode(response.body) as Map<String, dynamic>;
@@ -383,9 +423,9 @@ class ApiService {
     required String accessToken,
     required String friendshipId,
   }) async {
-    final response = await _client.post(
+    final response = await _post(
       Uri.parse('$baseUrl/api/friends/request/$friendshipId/decline'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
     );
     _checkStatus(response, 'declineFriendRequest');
     return jsonDecode(response.body) as Map<String, dynamic>;
@@ -395,9 +435,9 @@ class ApiService {
     required String accessToken,
     required String userId,
   }) async {
-    final response = await _client.delete(
+    final response = await _delete(
       Uri.parse('$baseUrl/api/friends/$userId'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
     );
     _checkStatus(response, 'unfriend');
   }
@@ -408,10 +448,7 @@ class ApiService {
   }) async {
     final uri = Uri.parse('$baseUrl/api/friends/search')
         .replace(queryParameters: {'q': query});
-    final response = await _client.get(
-      uri,
-      headers: _headers(accessToken: accessToken),
-    );
+    final response = await _get(uri, accessToken: accessToken);
     _checkStatus(response, 'searchUsers');
     return List<Map<String, dynamic>>.from(jsonDecode(response.body) as List);
   }
@@ -419,9 +456,9 @@ class ApiService {
   Future<List<Map<String, dynamic>>> getLeaderboard({
     required String accessToken,
   }) async {
-    final response = await _client.get(
+    final response = await _get(
       Uri.parse('$baseUrl/api/friends/leaderboard'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
     );
     _checkStatus(response, 'getLeaderboard');
     return List<Map<String, dynamic>>.from(jsonDecode(response.body) as List);
@@ -434,9 +471,9 @@ class ApiService {
   Future<List<Map<String, dynamic>>> getChallenges({
     required String accessToken,
   }) async {
-    final response = await _client.get(
+    final response = await _get(
       Uri.parse('$baseUrl/api/challenges'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
     );
     _checkStatus(response, 'getChallenges');
     return List<Map<String, dynamic>>.from(jsonDecode(response.body) as List);
@@ -445,9 +482,9 @@ class ApiService {
   Future<List<Map<String, dynamic>>> getChallengeHistory({
     required String accessToken,
   }) async {
-    final response = await _client.get(
+    final response = await _get(
       Uri.parse('$baseUrl/api/challenges/history'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
     );
     _checkStatus(response, 'getChallengeHistory');
     return List<Map<String, dynamic>>.from(jsonDecode(response.body) as List);
@@ -459,9 +496,9 @@ class ApiService {
     required String type,
     int durationDays = 7,
   }) async {
-    final response = await _client.post(
+    final response = await _post(
       Uri.parse('$baseUrl/api/challenges'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
       body: jsonEncode({
         'recipient_id': recipientId,
         'type': type,
@@ -476,9 +513,9 @@ class ApiService {
     required String accessToken,
     required String challengeId,
   }) async {
-    final response = await _client.post(
+    final response = await _post(
       Uri.parse('$baseUrl/api/challenges/$challengeId/accept'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
     );
     _checkStatus(response, 'acceptChallenge');
     return jsonDecode(response.body) as Map<String, dynamic>;
@@ -488,9 +525,9 @@ class ApiService {
     required String accessToken,
     required String challengeId,
   }) async {
-    final response = await _client.post(
+    final response = await _post(
       Uri.parse('$baseUrl/api/challenges/$challengeId/decline'),
-      headers: _headers(accessToken: accessToken),
+      accessToken: accessToken,
     );
     _checkStatus(response, 'declineChallenge');
     return jsonDecode(response.body) as Map<String, dynamic>;
@@ -502,7 +539,7 @@ class ApiService {
 
   Future<bool> healthCheck() async {
     try {
-      final response = await _client.get(Uri.parse('$baseUrl/health'));
+      final response = await _get(Uri.parse('$baseUrl/health'));
       return response.statusCode == 200;
     } catch (_) {
       return false;

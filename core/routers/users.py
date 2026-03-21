@@ -34,4 +34,5 @@ async def update_profile(
 
     current_user.last_active = datetime.utcnow()
     db.add(current_user)
+    await db.flush()   # write to DB within the transaction; raises on constraint violation
     return current_user

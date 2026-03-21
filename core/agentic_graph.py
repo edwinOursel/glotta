@@ -10,14 +10,17 @@ This module implements a multi-agent system using LangGraph to:
 - Validate response quality
 """
 
-from typing import TypedDict, Annotated, Optional, List
-from langgraph.graph import StateGraph, END
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-from langchain_openai import ChatOpenAI
-from pydantic import BaseModel
+import logging
 import os
+from typing import TypedDict, Optional
+
+from langgraph.graph import StateGraph, END
+from langchain_core.messages import HumanMessage
+from langchain_openai import ChatOpenAI
 
 from japanese_generator import JapaneseGenerator
+
+log = logging.getLogger(__name__)
 
 
 # ============================================================================
@@ -70,7 +73,7 @@ class IntentDetector:
 
     def detect(self, state: GraphState) -> GraphState:
         """Detect intent from user input."""
-        print("🎯 [IntentDetector] Analyzing user intent...")
+        log.info("[IntentDetector] Analyzing user intent...")
 
         prompt = f"""Analyze this user input and determine their intent.
 User input: "{state['user_input']}"
@@ -85,11 +88,10 @@ Respond with ONLY the intent name (e.g., "practice", "correction", etc.).
         response = self.llm.invoke([HumanMessage(content=prompt)])
         intent = response.content.strip().lower()
 
-        # Validate intent
         if intent not in self.INTENTS:
             intent = "conversation"  # Default fallback
 
-        print(f"   ✓ Detected intent: {intent}")
+        log.info("[IntentDetector] Detected intent: %s", intent)
         state["intent"] = intent
         return state
 
@@ -102,12 +104,11 @@ class ErrorCorrector:
 
     def correct(self, state: GraphState) -> GraphState:
         """Correct errors in user input if intent is correction."""
-        print("✏️  [ErrorCorrector] Checking for errors...")
+        log.info("[ErrorCorrector] Checking for errors...")
 
-        # Only correct if intent is correction or if input contains Japanese
         if state["intent"] != "correction":
             state["corrected_input"] = state["user_input"]
-            print("   → No correction needed for this intent")
+            log.info("[ErrorCorrector] No correction needed for this intent")
             return state
 
         prompt = f"""You are a Japanese language teacher. Analyze this text and correct any errors.
@@ -133,7 +134,6 @@ EXPLANATION: <explanation>
             state["corrected_input"] = state["user_input"]
             state["feedback"] = "✓ Your Japanese is correct!"
         else:
-            # Parse correction
             lines = content.split("\n")
             corrected = state["user_input"]
             explanation = ""
@@ -147,7 +147,7 @@ EXPLANATION: <explanation>
             state["corrected_input"] = corrected
             state["feedback"] = f"Corrections:\n{explanation}"
 
-        print(f"   ✓ Result: {state['corrected_input']}")
+        log.info("[ErrorCorrector] Result: %s", state["corrected_input"])
         return state
 
 
@@ -179,16 +179,15 @@ Use simple examples and break down complex ideas."""
 
     def build(self, state: GraphState) -> GraphState:
         """Build system prompt based on intent and level."""
-        print("📝 [SystemPromptBuilder] Building system prompt...")
+        log.info("[SystemPromptBuilder] Building system prompt...")
 
         intent = state.get("intent", "conversation")
         level = state.get("user_level", "N5")
 
         template = self.PROMPTS.get(intent, self.PROMPTS["conversation"])
-        system_prompt = template.format(level=level)
+        state["system_prompt"] = template.format(level=level)
 
-        state["system_prompt"] = system_prompt
-        print(f"   ✓ Built prompt for intent: {intent}, level: {level}")
+        log.info("[SystemPromptBuilder] Built prompt for intent=%s level=%s", intent, level)
         return state
 
 
@@ -200,16 +199,13 @@ class ConstrainedGenerator:
 
     def generate(self, state: GraphState) -> GraphState:
         """Generate constrained Japanese text."""
-        print("🤖 [ConstrainedGenerator] Generating response...")
+        log.info("[ConstrainedGenerator] Generating response...")
 
-        # Prepare prompt with system context
         prompt = state.get("corrected_input") or state["user_input"]
 
-        # Add system prompt as context if available
         if state.get("system_prompt"):
             prompt = f"{state['system_prompt']}\n\nUser: {prompt}\nAssistant:"
 
-        # Generate with constraints
         try:
             texts = self.generator.generate(
                 prompt=prompt,
@@ -221,10 +217,10 @@ class ConstrainedGenerator:
 
             generated = texts[0] if texts else ""
             state["generated_text"] = generated
-            print(f"   ✓ Generated: {generated[:50]}...")
+            log.info("[ConstrainedGenerator] Generated %d chars", len(generated))
 
-        except Exception as e:
-            print(f"   ✗ Generation failed: {e}")
+        except Exception:
+            log.exception("[ConstrainedGenerator] Generation failed")
             state["generated_text"] = "申し訳ございません。エラーが発生しました。"
 
         return state
@@ -238,9 +234,8 @@ class ResponseValidator:
 
     def validate(self, state: GraphState) -> GraphState:
         """Validate response quality."""
-        print("✅ [ResponseValidator] Validating response...")
+        log.info("[ResponseValidator] Validating response...")
 
-        # Skip validation if constraints disabled or max iterations reached
         if not state.get("use_constraints") or state["iterations"] >= state["max_iterations"]:
             state["validation_result"] = {"valid": True, "score": 1.0}
             state["final_response"] = state["generated_text"]
@@ -269,7 +264,6 @@ FEEDBACK: <brief feedback>
             response = self.llm.invoke([HumanMessage(content=prompt)])
             content = response.content.strip()
 
-            # Parse validation
             score = 0.7
             valid = True
             feedback = ""
@@ -278,23 +272,18 @@ FEEDBACK: <brief feedback>
                 if line.startswith("SCORE:"):
                     try:
                         score = float(line.replace("SCORE:", "").strip())
-                    except:
+                    except ValueError:
                         pass
                 elif line.startswith("VALID:"):
                     valid = "YES" in line.upper()
                 elif line.startswith("FEEDBACK:"):
                     feedback = line.replace("FEEDBACK:", "").strip()
 
-            state["validation_result"] = {
-                "valid": valid,
-                "score": score,
-                "feedback": feedback
-            }
+            state["validation_result"] = {"valid": valid, "score": score, "feedback": feedback}
+            log.info("[ResponseValidator] valid=%s score=%.2f", valid, score)
 
-            print(f"   ✓ Validation: {'✓' if valid else '✗'} (score: {score:.2f})")
-
-        except Exception as e:
-            print(f"   ⚠️  Validation failed: {e}, assuming valid")
+        except Exception:
+            log.exception("[ResponseValidator] Validation failed, assuming valid")
             state["validation_result"] = {"valid": True, "score": 0.5}
 
         return state
@@ -304,11 +293,9 @@ def should_retry(state: GraphState) -> str:
     """Decide if we should retry generation."""
     validation = state.get("validation_result", {})
 
-    # Don't retry if valid or max iterations reached
     if validation.get("valid", True) or state["iterations"] >= state["max_iterations"]:
         return "finalize"
 
-    # Retry if score is too low
     if validation.get("score", 1.0) < 0.6:
         state["iterations"] += 1
         return "retry"
@@ -318,21 +305,19 @@ def should_retry(state: GraphState) -> str:
 
 def finalize_response(state: GraphState) -> GraphState:
     """Finalize the response with feedback."""
-    print("📦 [Finalizer] Preparing final response...")
+    log.info("[Finalizer] Preparing final response...")
 
     final_response = state["generated_text"]
 
-    # Add correction feedback if available
     if state.get("feedback"):
         final_response = f"{state['feedback']}\n\n{final_response}"
 
-    # Add validation feedback if low score
     validation = state.get("validation_result", {})
     if validation.get("score", 1.0) < 0.8 and validation.get("feedback"):
-        final_response += f"\n\n📝 Note: {validation['feedback']}"
+        final_response += f"\n\nNote: {validation['feedback']}"
 
     state["final_response"] = final_response
-    print("   ✓ Final response ready")
+    log.info("[Finalizer] Final response ready")
     return state
 
 
@@ -343,17 +328,14 @@ def finalize_response(state: GraphState) -> GraphState:
 def create_agentic_graph(generator: JapaneseGenerator) -> StateGraph:
     """Create the agentic LangGraph system."""
 
-    # Initialize agents
     intent_detector = IntentDetector()
     error_corrector = ErrorCorrector()
     prompt_builder = SystemPromptBuilder()
     constrained_gen = ConstrainedGenerator(generator)
     validator = ResponseValidator()
 
-    # Create graph
     workflow = StateGraph(GraphState)
 
-    # Add nodes
     workflow.add_node("detect_intent", intent_detector.detect)
     workflow.add_node("correct_errors", error_corrector.correct)
     workflow.add_node("build_prompt", prompt_builder.build)
@@ -361,21 +343,16 @@ def create_agentic_graph(generator: JapaneseGenerator) -> StateGraph:
     workflow.add_node("validate", validator.validate)
     workflow.add_node("finalize", finalize_response)
 
-    # Define flow
     workflow.set_entry_point("detect_intent")
     workflow.add_edge("detect_intent", "correct_errors")
     workflow.add_edge("correct_errors", "build_prompt")
     workflow.add_edge("build_prompt", "generate")
     workflow.add_edge("generate", "validate")
 
-    # Conditional edge: retry or finalize
     workflow.add_conditional_edges(
         "validate",
         should_retry,
-        {
-            "retry": "generate",
-            "finalize": "finalize"
-        }
+        {"retry": "generate", "finalize": "finalize"}
     )
 
     workflow.add_edge("finalize", END)
@@ -391,6 +368,11 @@ class AgenticGlotta:
     """Main interface for the agentic Glotta system."""
 
     def __init__(self, generator: JapaneseGenerator):
+        if not os.environ.get("OPENAI_API_KEY"):
+            raise RuntimeError(
+                "OPENAI_API_KEY environment variable is not set. "
+                "The agentic system requires a valid OpenAI API key."
+            )
         self.generator = generator
         self.graph = create_agentic_graph(generator)
 
@@ -404,7 +386,6 @@ class AgenticGlotta:
     ) -> dict:
         """Process user input through the agentic graph."""
 
-        # Initialize state
         initial_state: GraphState = {
             "user_input": user_input,
             "user_level": user_level,
@@ -422,18 +403,10 @@ class AgenticGlotta:
             "max_iterations": max_iterations
         }
 
-        # Run graph
-        print("\n" + "="*60)
-        print("🚀 Starting agentic processing...")
-        print("="*60)
-
+        log.info("Starting agentic processing for input: %.50s", user_input)
         final_state = self.graph.invoke(initial_state)
+        log.info("Agentic processing complete after %d iteration(s)", final_state.get("iterations", 0))
 
-        print("="*60)
-        print("✨ Processing complete!")
-        print("="*60 + "\n")
-
-        # Return response
         return {
             "response": final_state.get("final_response", ""),
             "intent": final_state.get("intent"),

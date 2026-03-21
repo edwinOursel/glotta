@@ -5,13 +5,13 @@
 - [x] `core/auth.py:25` — SECRET_KEY : crasher au startup si absent (actuellement fallback sur valeur hardcodée)
 - [x] `core/api_server.py:268,282` — Path traversal sur `/api/vocabulary/save` et `/load` (filename non validé)
 - [x] `core/routers/*.py` — Stack traces exposées dans les réponses d'erreur (detail=str(e))
-- [ ] `core/agentic_graph.py` — Clé OpenAI non validée au startup
+- [x] `core/agentic_graph.py` — Clé OpenAI non validée au startup
 
 ## HIGH
 
 - [x] `core/routers/auth.py` — Pas de rate limiting (brute force sur login/register)
 - [x] `core/routers/` (génération) — Pas de rate limiting sur les appels LLM (coûteux)
-- [ ] `core/routers/users.py:37` — ORM object retourné après fermeture de session (LazyLoad crash)
+- [x] `core/routers/users.py:37` — ORM object retourné après fermeture de session (LazyLoad crash)
 - [x] `core/api_server.py:200` — Prompt injection via `system_prompt` fourni par l'utilisateur
 - [ ] `core/database.py` — Pas de migrations Alembic (create_all() en prod = pas de rollback)
 - [ ] `mobile/lib/services/api_service.dart:18-20` — URL API hardcodée (`10.0.2.2:8000`, Android emulator only)
